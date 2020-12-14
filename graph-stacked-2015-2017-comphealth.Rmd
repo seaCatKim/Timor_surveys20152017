@@ -1,0 +1,220 @@
+---
+title: "graph-2015-2017TL-comphealth"
+author: "CKim"
+date: "August 8, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r read in  Site to Site2 urban/rural names}
+library(tidyverse)
+site2 <- read.csv("data/Site-Site2.csv")
+colnames(site2)[1] <- "Site"
+head(site2)
+```
+```{r read in data}
+compdat <- read.csv('data/comp7_tave.csv') %>% 
+   pivot_longer(AllAlgae:WS, names_to = 'Status', values_to = 'Percent') %>% 
+   full_join(site2, by = "Site") %>% 
+   mutate_if(is.character, as.factor) 
+
+compdat$Year <- as.factor(compdat$Year)
+head(compdat)
+compdat <- compdat[-which(is.na(compdat)),]
+```
+
+
+# average comprimese states by site, depth, year
+```{r average group by year, site, depth}
+compall <- compdat %>% 
+   group_by(Year, Site2, Depth, Status) %>% 
+   dplyr::summarize(avePer = mean(Percent),
+                                  SE = sd(Percent)/sqrt(n()))
+```
+
+```{r old read in data }
+# comph15 <- read.csv("TL15-comph7-WS-site-summarySE-nameedit.csv")
+# comph15$X <- 2015
+# comph17 <- read.csv("TL17-per-comp7-h-d-summarySE.csv")  # in 2017Trip/CoralDAta
+# head(comph17)
+# comph17$X <- 2017
+# 
+# head(comph15)
+# head(comph17)
+# 
+# compall <- rbind(comph15, comph17)
+# head(compall)
+# levels(compall$Status)
+# compall$Depth <- relevel(compall$Depth, ref = "5m")
+# 
+# compall$Site <- as.factor(compall$Site)
+# levels(compall$Site)[levels(compall$Site) == "Manatutu"] <- "Manatuto"
+```
+
+```{r graph 2015-2017 together, RIGHT order, echo=FALSE}
+library(ggplot2)
+#compall$Status <- factor(compall.order$Status, c("WS", "AllAlgae", "BL", "CCA", "OTH", "TL", "Healthy"))
+compall$Status <- factor(compall$Status, levels=c("WS", "OTH", "TL", "CCA","AllAlgae", "BL", "Healthy"))
+                                                          
+ggplot(compall, aes(Year, avePer,  fill = Status)) +
+   facet_grid(Depth ~Site2, switch = "x") +
+    geom_bar(position="stack", stat="identity")+ #, color = "black") +
+   ggtitle("Signs of Compromised Health 2015, 2017") +
+   theme_classic() +
+labs(x = "", y = "Percent") +
+   theme(plot.title = element_text("sans", "bold",color = "black", 15)) +
+   theme(text = element_text(size = 16)) +
+   theme(axis.ticks.x = element_blank()) +#, panel.background = element_rect("gray85"))+
+   theme(axis.text.x = element_text(hjust = 0.5),
+         legend.title = element_blank())+
+   scale_fill_brewer(palette="RdYlBu")
+ggsave('figures/stacked-comphealth-20152017.pdf', width = 7, height = 4)
+```
+# stacked graph without depth facet
+```{r groupby year and site}
+compall_nodepth <- compdat %>% 
+   group_by(Year, Site2, Status) %>% 
+   dplyr::summarize(avePer = mean(Percent))
+
+compall_nodepth$Status <- factor(compall_nodepth$Status, levels=c("WS", "OTH", "TL", "CCA","AllAlgae", "BL", "Healthy"))
+```
+
+```{r do facet by depth}
+ggplot(compall_nodepth, aes((Year), avePer,  fill = Status)) +
+   facet_grid(.~Site2, switch = "x") +
+    geom_bar(position="stack", stat="identity")+ #, color = "black") +
+   ggtitle("Signs of Compromised Health 2015, 2017") +
+   theme_classic() +
+labs(x = "", y = "Percent") +
+   theme(plot.title = element_text("sans", "bold",color = "black", 15)) +
+   theme(text = element_text(size = 16)) +
+   theme(axis.ticks.x = element_blank()) + #, panel.background = element_rect("gray85"))+
+   theme(axis.text.x = element_text(hjust = 0.5),
+         legend.title = element_blank())+
+   scale_fill_brewer(palette="RdYlBu")
+ggsave('figures/stacked-comphealth-20152017-nodepth.jpg', width = 7, height = 4)
+```
+
+
+You can also embed plots, for example:
+```{r join Site to Site2 urban/rural names}
+library(tidyr)
+library(dplyr)
+site2 <- read.csv("Site-Site2.csv")
+colnames(site2)[1] <- "Site"
+head(site2)
+
+compall <- full_join(compall, site2, by = "Site")
+
+compall$SiteYr <- paste(compall$Site2, compall$X, sep = "-")
+head(compall)
+```
+
+
+```{r graph 2015-2017 together, echo=FALSE}
+library(ggplot2)
+order(levels(compall$Status))
+#levels(compall$Status) <- order(levels(compall$Status), c(7,2,3,4,5,6,1))
+levels(compall$Status) <- order(c("WS", "AllAlgae", "BL", "CCA", "OTH", "TL", "Healthy"))
+compall$Status <- factor(compall$Status, c("WS", "AllAlgae", "BL", "CCA", "OTH", "TL", "Healthy"))
+compall$Status <- relevel(compall$Status, ref = "WS")
+
+ggplot(compall, aes(factor(Year), avePer,  fill = (Status))) +
+   facet_grid(Depth ~Site2, switch = "x") +
+    geom_bar(position="stack", stat="identity", color = "black") +
+   ggtitle("Signs of Compromised Health 2015, 2017") +
+   theme_classic() +
+labs(x = "", y = "Percent") +
+   theme(plot.title = element_text("sans", "bold",color = "black", 20)) +
+   theme(text = element_text(size = 15)) +
+   theme(axis.ticks.x = element_blank(), panel.border = element_blank())+
+   theme(axis.text.x = element_text(hjust = 0.5))+
+      guides(fill = guide_legend(reverse=TRUE))
+```
+```{r bw stacked - no x axis label}
+levels(compall$Status)
+#compall$Status <- factor(compall$Status, c("AllAlgae", "BL", "CCA", "TL", "OTH", "WS", "Healthy"))
+compall$Status <- factor(compall$Status, c("WS", "AllAlgae", "BL", "CCA", "TL", "OTH", "Healthy"))
+
+ggplot(compall, aes( SiteYr, Percent, fill = Status)) +
+          facet_grid(Depth ~.) +
+    geom_bar(position="stack", stat="identity", color = "black") +
+   ggtitle("Signs of Compromised Health 2015, 2017") +
+   theme_classic() +
+labs(x = "", y = "Percent") +
+   theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
+   theme(text = element_text(size = 15)) +
+   theme(axis.text.x = element_blank()) +
+       scale_fill_grey(start =0, end = 1) +
+    theme(axis.ticks.x = element_blank(), panel.border = element_blank())+
+   guides(fill = guide_legend(reverse=TRUE))
+```
+```{r}
+head(compall)
+#compall$X <- 
+levels(compall$Status)
+#compall$Status <- factor(compall$Status, c("AllAlgae", "BL", "CCA", "TL", "OTH", "WS", "Healthy"))
+compall$Status <- factor(compall$Status, c("WS", "AllAlgae", "BL", "CCA", "TL", "OTH", "Healthy"))
+
+ggplot(compall, aes(factor(X), Percent,  fill = Status)) +    facet_grid(Depth ~Site2, switch = "x") +
+    geom_bar(position="stack", stat="identity", color = "black") +
+   ggtitle("Signs of Compromised Health 2015, 2017") +
+   theme_classic() +
+labs(x = "", y = "Percent") +
+   theme(plot.title = element_text("sans", "bold",color = "black", 30)) +
+   theme(text = element_text(size = 20)) +
+       scale_fill_grey(start =0, end = 1) +
+    theme(axis.ticks.x = element_blank(), panel.border = element_blank())+
+   theme(axis.text.x = element_text(hjust = 0.5))+
+      guides(fill = guide_legend(reverse=TRUE))
+
+#theme(strip.background = element_blank())
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+compall$X <- as.factor(compall$X)
+ggplot(compall, aes(X, Percent, fill = Site)) +
+          facet_grid(Depth ~Status) +
+    geom_bar(position=position_dodge(), stat="identity") +
+    geom_errorbar(aes(ymin=Percent-se, ymax=Percent+se),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9)) +
+   ggtitle("Signs of Compromised Health 2015 and 2017") +
+   theme_classic()
+```
+
+```{r add site-year}
+compall$SiteYr <- paste(compall$Site2, compall$X, sep="-")
+head(compall$SiteYr)
+
+ggplot(compall, aes(Status, Percent, fill = SiteYr)) +
+          facet_grid(Depth ~.) +
+    geom_bar(position=position_dodge(), stat="identity") +
+    geom_errorbar(aes(ymin=Percent-se, ymax=Percent+se),
+                  width=.1,                    # Width of the error bars
+                  position=position_dodge(.9)) +
+   ggtitle("Signs of Compromised Health 2015 and 2017") +
+   theme_classic() 
+   #scale_fill_manual(values=c("#000099", "#3333FF", "#006633", "#66CC33", "#CC6600", "#FF9933",
+                             # "#990000", "#FF3333"))
+```
+
+## MEANS for paper ----
+```{r}
+head(compall.order)
+
+healthy.aveyr <- compall %>% filter(Status == "Healthy") %>%
+   summarySE("Percent", "X")
+   healthy.aveyr
+```
+
+## permanova ----
+```{r}
+
+```
+
