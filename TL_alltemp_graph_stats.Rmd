@@ -1,0 +1,137 @@
+---
+title: "Timoe-Leste 2015-2017 temperature data"
+author: "Catherine Kim"
+date: "December 16, 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Timor-Leste in situ and satellite temperature data from Nov 2015 to Jul 2017
+
+```{r combine  sites 5 and 10 m depth montly mean from daily max, crw data}
+temp <- read_csv("data/alltemp_TL.csv") %>% 
+   mutate_if(is.character, as.factor)
+head(temp)
+
+temp$m.y <- as.factor(temp$m.y)
+temp$month <- as.factor(temp$month)
+temp$year <- as.factor(temp$year)
+temp$Depth <- as.factor(temp$Depth)
+temp$Depth <- relevel(temp$Depth, ref = '5m')
+
+levels(temp$m.y)
+temp$m.y = factor(temp$m.y,levels(temp$m.y)[c(21,24,3,5,7,1,9,11,13,15,17,19,22,25,4,6,8,2,10,12,14,16,18,20,23)])
+```
+
+```{r line graph all sites by month/yr}
+cbPalette <- c("#D55E00", "#56B4E9", "#009E73",  "#CC79A7")
+
+ggplot(temp, aes(m.y, Temp, group = Site, color = Site)) + facet_grid(Depth~.) +
+   geom_ribbon(aes(ymax=Temp+(2*se), ymin=Temp-(2*se), fill = Site), alpha = 0.4) +
+   geom_line()+
+   scale_color_manual( values = cbPalette) +
+   scale_fill_manual(values = cbPalette) +
+   theme_classic() +
+   ggtitle("Coral Reef Watch - In Situ Temperature Monthly Mean + 2SE") +
+   xlab("Month/Year") + ylab("Temperature [C]") +
+   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+      geom_hline(yintercept = 29.5, color = "light blue", linetype = 2) +
+   geom_hline(yintercept = 30.5, color = "light blue") 
+ggsave('figures/line_TLtemp.pdf', width = 7, height = 4)
+```
+
+```{r filter overlapping Crw and c data, add season, add method}
+season <- data.frame(month = 1:12, season = rep(c("summer", "fall", "winter", "spring"), each = 3))
+season$month <- as.factor(season$month)
+season
+
+method <- data.frame(Site = c("Rural-N", "Urban-E", "Urban-W", "CRW"), Method = c("insitu", "insitu", "insitu", "sat"))
+method
+
+# subset out data with both CRW and logger temperature data
+temp.same <- temp %>% filter(m.y != "8/2015" & m.y != "9/2015" & m.y != "10/2015" & m.y != "11/2015" & 
+                                m.y != "6/2017" & m.y != "7/2017" & m.y != "8/2017") %>% 
+  inner_join(season, by = 'month') %>% 
+   inner_join(method, by = 'Site')
+
+# remove CRW for one depth used for plot
+temp.same <- temp.same[-which(temp.same$Site == 'CRW' & temp.same$Depth == '10m'),] #
+
+head(temp.same)
+```
+
+## Statistics
+
+```{r histograph Temp, anova}
+hist(temp.same$Temp)
+```
+
+```{r site by season anova}
+site.lm <- lm(Temp~Site * season, data = temp.same)
+library(car)
+Anova(site.lm)
+library(emmeans)
+emmeans(site.lm, list(pairwise ~ season), adjust = "tukey")
+emmeans(site.lm, list(pairwise ~ Site), adjust = "tukey")
+
+boxplot(Temp~Site, data = temp.same)
+boxplot(Temp~season, data = temp.same)
+```
+
+```{r method by season anova}
+method.lm <- lm(Temp~Method*season, data = temp.same)
+Anova(method.lm)
+
+emmeans(method.lm, list(pairwise ~ season), adjust = "tukey")
+emmeans(method.lm, list(pairwise ~ Method), adjust = "tukey")
+emmeans(method.lm, list(pairwise ~ Depth), adjust = "tukey")
+
+boxplot(Temp~Depth, data = temp.same)
+boxplot(Temp~Method, data = temp.same)
+boxplot(Temp~season, data = temp.same)
+```
+
+```{r ave temp by CRW and all loggers together}
+temp.same %>% 
+   group_by(Method, season) %>% 
+   summarize(avetemp = mean(Temp), SDtemp = sd(Temp), SEtemp = sd(Temp)/sqrt(n()))
+```
+
+## Statistics testing site/depth differences between logger data
+```{r}
+logger <- filter(temp.same, temp.same$Method != 'sat') %>% droplevels()
+head(logger)
+```
+
+```{r Anova on logger temperature differences between site, depth, month/year}
+log.lm <- lm(Temp~Site*Depth + factor(month)/factor(year), data = logger)
+Anova(log.lm)
+plot(log.lm)
+
+emmeans(log.lm, list(pairwise ~ factor(month):factor(year)), adjust = "tukey")
+emmeans(log.lm, list(pairwise ~ Site:Depth), adjust = "tukey")
+
+boxplot(Temp~Depth, data = logger)
+boxplot(Temp~Site, data = logger)
+boxplot(Temp~month, data = logger)
+
+logger$Ym <- interaction(logger$year, logger$month)
+boxplot(Temp~Ym, data = logger, las = 2)
+
+sitedepth.ave <- logger %>% 
+   group_by(Site,Depth) %>% 
+   dplyr::summarize(ave = mean(Temp), SD = sd(Temp), se = SD/sqrt(n()))
+sitedepth.ave
+```
+
+```{r ave diff betwen site ave temp 5 vs 10 m}
+sitedepth.diff <- sitedepth.ave %>% 
+   select(Site, Depth, ave) %>% 
+   spread(Depth, ave) %>% 
+   mutate(diff = `10m` - `5m`)
+sitedepth.diff
+ave(sitedepth.diff$diff)
+```
