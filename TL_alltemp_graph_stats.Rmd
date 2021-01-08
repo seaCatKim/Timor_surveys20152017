@@ -84,10 +84,10 @@ temp.same$Method <- relevel(temp.same$Method, ref = "sat")
 head(temp.same)
 
 # only crw from temp same
-crw.same <- filter(temp.same, Site == 'CRWTL') %>% 
+crw<- filter(temp, Site == 'CRWTL') %>% 
    select(Site, m.y, Temp, sd, se, N)
 
-colnames(crw.same)[which(colnames(crw.same) == 'Temp')] <- 'siteave'
+colnames(crw)[which(colnames(crw) == 'Temp')] <- 'siteave'
 
 #write.csv(temp.same, 'TL_CRW_logger_alltempsame.csv')
 ```
@@ -105,7 +105,7 @@ temp.avelog <- temp.same %>%
 temp.avelog
 
 # comgine crw montly ave se and logger by site ave and se
-temp.avelog.crw <- rbind.data.frame(temp.avelog, crw.same )
+temp.avelog.crw <- rbind.data.frame(temp.avelog, crw)
 ```
 
 Plotting satellite monthly average without error and 2 loggers averages per site with SE
@@ -126,7 +126,7 @@ ggplot(data = temp.avelog.crw, aes(m.y, siteave, group = Site, color = Site)) +
          legend.title = element_text(size = 14)) +
       geom_hline(yintercept = 29.5, color = "light blue", linetype = 2) +
    geom_hline(yintercept = 30.5, color = "light blue") 
-ggsave('figures/line_TLtemp.pdf', width = 7, height = 4)
+ggsave('figures/line_TLtemp_pooled.pdf', width = 7, height = 4)
 ```
 ## Statistics
 ```{r histograph Temp, anova}
