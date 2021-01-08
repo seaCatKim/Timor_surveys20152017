@@ -14,7 +14,7 @@ library(tidyverse)
 ## Current paper results
 
 ## Timor-Leste in situ and satellite temperature data from Nov 2015 to Jul 2017
-Monthly average of daily maximum temperature
+Monthly average of daily maximum temperature from 'graph-CKTLtemp-allsitesdepth.RMD'
 ```{r combine  sites 5 and 10 m depth montly mean from daily max, crw data}
 temp <- read_csv("data/alltemp_TL.csv") %>% 
    mutate_if(is.character, as.factor)
@@ -66,7 +66,7 @@ season <- data.frame(month = 1:12, season = rep(c("summer", "fall", "winter", "s
 season$month <- as.factor(season$month)
 season
 
-method <- data.frame(Site = c("Rural-N", "Urban-E", "Urban-W", "CRW"), Method = c("insitu", "insitu", "insitu", "sat"))
+method <- data.frame(Site = c("Rural-N", "Urban-E", "Urban-W", "CRWTL"), Method = c("insitu", "insitu", "insitu", "sat"))
 method
 
 # subset out data with both CRW and logger temperature data
@@ -76,12 +76,20 @@ temp.same <- temp %>% filter(m.y != "8/2015" & m.y != "9/2015" & m.y != "10/2015
    inner_join(method, by = 'Site')
 
 # remove CRW for one depth used for plot
-temp.same <- temp.same[-which(temp.same$Site == 'CRW' & temp.same$Depth == '10m'),] #
+temp.same <- temp.same[-which(temp.same$Site == 'CRWTL' & temp.same$Depth == '10m'),] #
 
 # relevel method so sat is reference
 temp.same$Method <- relevel(temp.same$Method, ref = "sat")
 
 head(temp.same)
+
+# only crw from temp same
+crw.same <- filter(temp.same, Site == 'CRWTL') %>% 
+   select(Site, m.y, Temp, sd, se, N)
+
+colnames(crw.same)[which(colnames(crw.same) == 'Temp')] <- 'siteave'
+
+#write.csv(temp.same, 'TL_CRW_logger_alltempsame.csv')
 ```
 
 ## Graph without facet by depth
@@ -90,16 +98,21 @@ average the 2 loggers per site
 
 ```{r ave temp loggers by site}
 temp.avelog <- temp.same %>% 
+   filter(Site != 'CRWTL') %>% 
    group_by(Site, m.y) %>% 
-   summarise(siteave = mean(Temp), SD = sd(Temp), SE = SD/sqrt(n()), N = n())
+   dplyr::summarise(siteave = mean(Temp), sd = sd(Temp), se = sd/sqrt(n()), N = n())
 
 temp.avelog
+
+# comgine crw montly ave se and logger by site ave and se
+temp.avelog.crw <- rbind.data.frame(temp.avelog, crw.same )
 ```
 
 Plotting satellite monthly average without error and 2 loggers averages per site with SE
 ```{r line graph all sites by month/yr no depth facet}
-ggplot(temp.avelog, aes(m.y, siteave, group = Site, color = Site)) + 
-   geom_ribbon(aes(ymax= siteave+(SE), ymin= siteave-(SE), fill = Site), alpha = 0.4) +
+ggplot(data = temp.avelog.crw, aes(m.y, siteave, group = Site, color = Site)) +
+   geom_line( aes(m.y, siteave, group = Site, color = Site)) + 
+   geom_ribbon( aes(ymax= siteave+(se), ymin= siteave-(se), fill = Site), alpha = 0.4) +
    geom_line()+
    scale_color_manual( values = cbPalette) +
    scale_fill_manual(values = cbPalette) +
@@ -141,6 +154,16 @@ boxplot(Temp~month, data = logger)
 logger$Ym <- interaction(logger$year, logger$month)
 boxplot(Temp~Ym, data = logger, las = 2)
 ```
+
+```{r test autocorrelation of loggers}
+library(DHARMa)
+
+res = simulateResiduals(log.lm)
+res = recalculateResiduals(res, group = logger$m.y)
+
+testTemporalAutocorrelation(res, time = unique(logger$m.y))
+```
+
 10 m loggers warmer thatn 5 m loggers which is unexpected, shallowers loggers should be warmer closer to the surface/sun
 could be submarine groundwater discharge? or logger error over time
 ```{r box plot showing site:depth interaction}
@@ -255,8 +278,14 @@ boxplot(Temp~Method, data = temp.same)
 boxplot(Temp~season, data = temp.same)
 boxplot(Temp~Method:season, data = temp.same, las = 2)
 ```
+```{r test autocorrelation for CRW and loggers by method}
+res = simulateResiduals(method.lm)
+res = recalculateResiduals(res, group = temp.same$m.y)
+
+testTemporalAutocorrelation(res, time = unique(temp.same$m.y))
+```
 ```{r box plot showing method:season interaction}
-ggplot(temp.same, aes(season, Temp)) + 
+ggplot(temp.same, aes(Method, Temp)) + facet_grid(.~season) +
    geom_jitter(aes(color = Method)) +
    geom_boxplot(fill = NA) + 
    theme_classic()
