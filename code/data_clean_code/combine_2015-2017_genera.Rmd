@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Clean genear data from belt transects 
+## Clean genera data from belt transects 
 
 Combine coral diversity genear from 15x2 belt transects in 2015 and 2017
 
