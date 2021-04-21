@@ -1,0 +1,126 @@
+---
+title: "Combine 2015 and 2017 genera data"
+author: "CKim"
+date: "12/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Clean genear data from belt transects 
+
+Combine coral diversity genear from 15x2 belt transects in 2015 and 2017
+
+Transect number from 2017 have been corrected to match 2015 transect numbers - see: 
+
+```{r read in gen table data}
+library(Rmisc)
+library(here)
+getwd()
+
+here::i_am("code/data_clean_code/combine_2015-2017_genera.Rmd")
+library(tidyverse)
+gen15 <- read_csv(here::here('data/rawdata/gentable-TL2015_newtransectnum.csv')) 
+
+# change Site and Depth into factors   
+gen15_factor <- gen15 %>% mutate(across(where(is_character),as_factor))
+   
+head(gen15_factor)
+colnames(gen15_factor)
+
+# add missing genear from 2017
+gen15_factor$CAUL <- 0
+gen15_factor$HERPO <- 0
+
+#combine poc
+gen15_factor$POC <- gen15_factor$POC + gen15_factor$POCdamicornis
+gen15_factor$POCdamicornis <- NULL
+
+#combine all ACRbr
+gen15_factor$ACRbr <- gen15_factor$ACRbot +
+   gen15_factor$ACRbushy +
+   gen15_factor$ACRdig + gen15_factor$ACRstag
+gen15_factor$ACRbot <- NULL
+# gen15_factor$ACRbush <- NULL
+gen15_factor$ACRbushy <- NULL
+gen15_factor$ACRdig <- NULL
+gen15_factor$ACRstag <- NULL
+```
+
+```{r 2017 genera data}
+gen17 <- read.csv(here::here("data/rawdata/gentable-TL2017_newtransectnum.csv"))
+
+gen17_factor <- gen17 %>%
+   mutate(across(where(is_character),as_factor))
+head(gen17_factor)
+colnames(gen17_factor)
+
+#combine HYDS Hydnophora morphologies
+gen17_factor$HYD <- gen17_factor$HYD + gen17_factor$HYDbr +
+   gen17_factor$HYDenc
+gen17_factor$HYDbr <- NULL
+gen17_factor$HYDenc <- NULL
+
+# adding missing genera from 2015
+gen17_factor$PLE <- 0
+gen17_factor$PORother <- 0
+gen17_factor$TUB <- 0
+gen17_factor$LIT <- 0
+
+#remove podo
+gen17_factor$podo. <- NULL
+
+# combine Acropora branching morphologies into one group
+gen17_factor$ACRbr <- gen17_factor$ACRbottle +
+   gen17_factor$ACRbushy + gen17_factor$ACRcorym +
+   gen17_factor$ACRdig + gen17_factor$ACRstag
+gen17_factor$ACRbottle <- NULL
+gen17_factor$ACRbushy <- NULL
+gen17_factor$ACRcorym <- NULL
+gen17_factor$ACRdig <- NULL
+gen17_factor$ACRstag <- NULL
+```
+
+```{r combine gentable sof both years}
+gen <- rbind(gen15_factor, gen17_factor)
+gen$Depth <- relevel(gen$Depth, ref = "5m")
+gen$Year <- as.factor(gen$Year)
+#str(gen)
+ncol(gen)
+tail(gen)
+
+colnames(gen)
+```
+
+```{r add unique id for transects}
+library(tidyr)
+library(dplyr)
+gen$long_id <- as.factor(paste(gen$Site, gen$Depth, gen$Transect, sep = "_"))
+
+#write.csv(levels(compd.t$id), "unique_ids.csv")
+# write levels and add num id
+# read file with num id
+ids <- read.csv(here::here("data/unique_ids_wnum_manatutu.csv"))
+
+gen <- gen %>% 
+   inner_join( ids, by = 'long_id') %>% 
+   select(Year, Site, Depth, Transect, num_id, ACA:ACRbr)
+gen$long_id <- NULL
+```
+
+```{r add site 2 column}
+site2 <- read.csv(here::here("data/Site-Site2.csv"))
+colnames(site2)[1] <- "Site"
+head(site2)
+
+gen <- full_join(gen, site2, by = "Site")
+gen$Site <- gen$Site2
+gen$Site2 <- NULL
+
+gen <- gen[-which(is.na(gen)),]
+head(gen)
+
+write.csv(gen, here::here('data/genmorph.csv'), row.names = F)
+```
