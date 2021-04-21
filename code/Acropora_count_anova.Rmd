@@ -1,0 +1,49 @@
+---
+title: "anova_acropora"
+author: "CKim"
+date: "12/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analyzing Acropora counts per site
+
+```{r read in 2015 and 2017 genera data}
+gen <- read.csv('data/genmorph.csv')
+```
+
+## anova tabulate Acroporas 
+
+```{r Acropora tab per site/depth}
+hist(sqrt(gen$ACRtab))
+
+acrt.glm <- glm(ACRtab~Year*Site*Depth, data = gen, family = "poisson")
+summary(acrt.glm)
+
+acrt.an <- aov(ACRtab~Year*Site*Depth, data = gen)
+summary(acrt.an)
+plot(acrt.an)
+TukeyHSD(acrt.an)
+
+gen.acr <- summarySE(gen, "ACRtab", c("Year", "Site", "Depth"))
+gen.acr
+```
+
+```{r Acropora br per site/depth}
+hist(sqrt(gen$ACRbr))
+
+acrb.lm <- lm(ACRbr~Year*Site*Depth, data = gen)
+summary(acrb.lm)
+
+acrb.an <- aov(ACRbr~Year*Site*Depth, data = gen)
+summary(acrb.an)
+plot(acrb.an)
+TukeyHSD(acrt.an)
+
+gen.acrbr <- summarySE(gen, "ACRbr", c("Site"))
+gen.acrbr
+```
+
