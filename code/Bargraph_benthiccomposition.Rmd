@@ -21,8 +21,9 @@ library(tidyr)
 library(Rmisc)
 library(ggplot2)
 library(reshape2)
+library(here)
 
-tur <- read.csv("data/LIT-master-2017-turf.csv")
+tur <- read.csv(here::here("data/LIT-master-2017-turf.csv"))
 head(tur)
 
 tur.ben <- tur %>%
@@ -93,7 +94,7 @@ head(ben.per.se)
 ```
 ```{r read in 2015 data}
 ## comparine 2015 and 2017...
-ben15 <- read.csv("data/BenComp-ave-se-TL2015.csv")
+ben15 <- read.csv(here::here("data/BenComp-ave-se-TL2015.csv"))
 ben15$X <- NULL
 ben15$Pop <- NULL
 ben15$sd.sd <- NULL
@@ -124,7 +125,8 @@ colnames(ben17)[colnames(ben17)=="value"] <- "ave"
 ben17$Site.Year <- paste(ben17$Site2, ben17$year, sep="-")
 head(ben17)
 
-ben.2yr <- rbind(ben15, ben17)
+ben.2yr <- rbind(ben15, ben17) %>%  dplyr::mutate(ben.2yr, across(where(is.character), as.factor))
+
 head(ben.2yr)
 nrow(ben.2yr)
 ben.2yr$Depth <- relevel(ben.2yr$Depth, ref = "5m")
@@ -154,5 +156,7 @@ ggplot(ben.2yr, aes(x=year,y = ave, fill= factor(Major.Category,
          text = element_text(size = 16)) +
    scale_fill_discrete(name="Benthic Category")
 
+ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.pdf'),
+       height = 4, width = 7)
 ```
 
