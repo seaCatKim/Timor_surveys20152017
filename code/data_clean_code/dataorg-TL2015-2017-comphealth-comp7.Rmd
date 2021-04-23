@@ -1,0 +1,561 @@
+---
+title: "Disease and comproised health data organization"
+author: "CKim"
+date: "August 7, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(Rmisc)
+```
+
+
+```{r read in TL15-health master}
+library(readr)
+library(here)
+dat <- read_csv(here::here("data/CoralHealth-2015-2017edit042021-R-genmorph.csv"))
+
+str(dat)
+dat$Site <- as.factor(dat$Site)
+levels(dat$Site)
+dat$Number <- as.numeric(dat$Number)
+dat$Depth <- as.factor(dat$Depth)
+dat$Transect <- as.factor(dat$Transect)
+dat$Status <- as.factor(dat$Status)
+
+dat$GEN.morph <- as.factor(paste(dat$GEN, dat$morph, sep = ""))
+levels(dat$GEN.morph)
+head(dat)
+```
+
+```{r }
+levels(dat$H1)
+levels(dat$GEN)
+levels(dat$Status)
+dat[which(dat$H1==" "),]
+colnames(dat)
+```
+
+```{r group by status, calculate prevalence}
+library(tidyr)
+library(dplyr)
+head(dat)
+dat.stat <- dat %>% group_by(Year, Site, Depth, Transect, Status) %>%
+   dplyr::summarize(tot.stat = sum(Number)) %>%
+   spread(Status, tot.stat, fill = 0) %>%
+   mutate(tot.coral = Healthy + Comp + Disease + Bleaching + Pale)
+head(dat.stat)
+
+# include pale with bleaching
+dat.pstat <- dat.stat %>%
+   transmute(pBleaching = (Bleaching + Pale)/tot.coral * 100, pComp = Comp/tot.coral*100, pHealthy = Healthy/tot.coral*100,
+             pDisease=Disease/tot.coral*100) %>%
+   gather(Status, Percent, pBleaching, pComp, pHealthy, pDisease)
+
+dat.pstat$Status <- as.factor(dat.pstat$Status)
+head(dat.pstat)
+
+w.site <- spread(dat.pstat, Status, Percent) %>% 
+   mutate(total = pBleaching + pComp + pDisease + pHealthy)
+(w.site)
+```
+```{r condition ave by site, depth}
+stat.site <- summarySE(dat.pstat, measurevar = "Percent", groupvars= c("Year", "Site", "Depth", "Status"))
+head(stat.site)
+```
+
+```{r graph status, echo = FALSE}
+library(ggplot2)
+stat.site$Depth <- relevel(stat.site$Depth, ref = "5m")
+
+ggplot(stat.site, aes(factor(Year), Percent, fill = Status)) +
+          facet_grid(Depth ~ Site) +
+    geom_bar(position="stack",stat="identity") +
+       ggtitle("Coral Status 2015 and 2017") +
+   theme_classic()
+```
+
+## total disease counts
+```{r total disease summed by site depth year}
+# TRE
+dat[which(dat$H2 == 'TRE'),]
+
+distot <- dat %>% 
+   group_by(Year, Site,  Status) %>% 
+   dplyr::summarize(total = sum(Number))
+distot
+
+distotgen <- dat %>% 
+   group_by(Year, Site, Status, GEN, morph,H1) %>% 
+   dplyr::summarize(total = sum(Number)) %>% 
+   filter(Status == 'Disease')
+distotgen
+
+# porportion of WS in Beloi 2015
+13/21
+```
+```{r WS summed by site depth year}
+WStotgen <- dat %>% 
+   group_by(Year, GEN, Site, morph, Status, H1, H2) %>% 
+   dplyr::summarize(total = sum(Number))%>% 
+   filter(H1 == "WS" | H2 == 'WS')
+WStotgen
+sum(WStotgen$total)
+```
+```{r GA summed by gen, site, depth, year}
+GAtotgen <- dat %>% 
+   group_by(Year, Site, GEN, morph,H1, H2, Status) %>% 
+   dplyr::summarize(total = sum(Number)) %>% 
+  filter(H1 == "GA" | H2 == 'GA') %>% 
+   droplevels()
+GAtotgen
+sum(GAtotgen$total)
+levels(GAtotgen$GEN)  # 9 genera with GAs
+
+TLtotgen <- dat %>% 
+   group_by(Year, Site, GEN, morph,H1, H2, Status) %>% 
+   dplyr::summarize(total = sum(Number)) %>% 
+  filter(H1 == "TL" | H2 == 'TL') %>% 
+   droplevels()
+TLtotgen
+sum(TLtotgen$total)
+
+BLtotgen <- dat %>% 
+   group_by(Year, Site, GEN, morph,H1, H2, H3, H4, Status) %>% 
+   dplyr::summarize(total = sum(Number)) %>% 
+  filter(Status == 'Bleaching') %>% 
+   droplevels()
+BLtotgen
+sum(BLtotgen$total)
+```
+```{r subset bleaching}
+dat.blp <- dat %>% filter( dat$Status == "Bleaching")
+colnames(dat.blp)[which(colnames(dat.blp) == "H1")] <- "H"
+nrow(dat.blp)
+head(dat.blp)
+ dat.blp$H2 <- NULL
+ dat.blp$H3 <- NULL
+ dat.blp$H4 <- NULL
+
+# not necessary to include H2, all included when subsetting bleaching, will throw off percent totals
+# dat.bl2 <- filter(dat.blp, dat.blp$H2 != "")
+# 
+# colnames(dat.bl2)[which(colnames(dat.bl2) == "H2")] <- "H"
+# head(dat.bl2)
+# nrow(dat.bl2)
+# 
+# dat.blall <- rbind(dat.blp, dat.bl2)
+
+# head(dat.blall)
+# nrow(dat.blall)
+```
+```{r subset diseae}
+dat.d <- dat %>% filter(dat$Status == "Disease")
+nrow(dat.d)
+head(dat.d)
+colnames(dat.d)[which(colnames(dat.d) == "H1")] <- "H"
+
+ dat.d$H2 <- NULL
+ dat.d$H3 <- NULL
+ dat.d$H4 <- NULL
+
+# not necessary to inclue H2 column all subset with status = disease
+# dat.d2 <- filter(dat.d, dat.d$H2 != "")
+# dat.d2
+# nrow(dat.d2)
+# 
+# dat.dall <- rbind(dat.d, dat.d2)
+
+# nrow(dat.dall)
+# head(dat.dall)
+```
+```{r subset compromised }
+dat.comp <- dat %>% filter(dat$Status == "Comp")
+head(dat.comp)
+nrow(dat.comp)
+
+dat.comph2 <- filter(dat.comp, dat.comp$H2 != "")
+
+dat.comph3 <- filter(dat.comp, dat.comp$H3 != "")
+
+dat.comph4 <- filter(dat.comp, dat.comp$H4 != "")
+dat.comp[which(dat.comp$H4 == "Broken"),]
+
+dat.comp$H2 <- NULL
+dat.comp$H3 <- NULL
+dat.comp$H4 <- NULL
+colnames(dat.comp)[which(colnames(dat.comp) == "H1")] <- "H"
+
+dat.comph2$H1 <- NULL
+dat.comph2$H3 <- NULL
+dat.comph2$H4 <- NULL
+colnames(dat.comph2)[which(colnames(dat.comph2) == "H2")] <- "H"
+head(dat.comph2)
+nrow(dat.comph2)
+
+dat.comph3$H1 <- NULL
+dat.comph3$H2 <- NULL
+dat.comph3$H4 <- NULL
+colnames(dat.comph3)[which(colnames(dat.comph3) == "H3")] <- "H"
+head(dat.comph3)
+nrow(dat.comph3)
+
+dat.comph4$H1 <- NULL
+dat.comph4$H2 <- NULL
+dat.comph4$H3 <- NULL
+colnames(dat.comph4)[which(colnames(dat.comph4) == "h4")] <- "H"
+head(dat.comph4)
+nrow(dat.comph4)
+
+dat.compall <- rbind(dat.comp, dat.comph2, dat.comph3, dat.comph4, dat.d, dat.blp)
+head(dat.compall)
+nrow(dat.compall) 
+
+nrow(dat.comph3) + nrow(dat.comph2) +nrow(dat.comph4) + nrow(dat.comp)
+nrow(dat.d)
+nrow(dat.blp)
+
+levels(dat.compall$H)
+dat.compall[which(dat.compall$H == "cyl"),]
+
+```
+
+```{r total corals per transect}
+dat.compall.sum <- dat.compall %>% group_by(Year, Site, Depth, Transect, H) %>%
+   dplyr::summarize(tot.stat = sum(Number)) %>%
+   spread(H, tot.stat, fill = 0)
+head(dat.compall.sum)
+str(dat.compall.sum)
+
+# add compall total to sum of compromised stats - no repeats - to compare
+compall.tot <- apply(dat.compall.sum[,5:ncol(dat.compall.sum)], 1, sum)
+
+x <- data.frame(1:48)
+head(x)
+
+for( i in 5:ncol(dat.compall.sum)){
+   y <- dat.compall.sum[,i]/compall.tot*(w.site$pBleaching+w.site$pComp+w.site$pDisease) # scale to percent withouth h2, h3, h4 cols
+   x <- cbind(x,y)
+}
+head(x)
+str(x)
+
+dat.compall.per <- cbind.data.frame(dat.compall.sum[,1:4], x, w.site$pHealthy)
+dat.compall.per$X1.48 <- NULL
+dat.compall.per$`w.site$pHealthy`
+colnames(dat.compall.per)[which(colnames(dat.compall.per) == "w.site$pHealthy")] <- 'Healthy'
+
+totpercent <- dat.compall.per %>% dplyr::summarize(total = sum(5:ncol(dat.compall.per)))
+
+head(dat.compall.per)
+
+compall.per.nobd10 <- dat.compall.per %>% filter(Site != "Beloi") %>%
+   filter(Site != "DiliRock" | Depth == "5m")
+#write.csv(dat.compall.per, "TL15-allcompcats-per-wide.csv")
+
+# above code works better
+## calc percent using total transect
+# trans.tot <- dat %>% 
+#    group_by(Year, Site, Depth, Transect) %>% 
+#    dplyr::summarise(tot = sum(Number))
+# 
+# z <- data.frame(1:48)
+# 
+# for( i in 5:ncol(dat.compall.sum)){
+#    y <- dat.compall.sum[,i]/trans.tot$tot*100
+#    z <- cbind(z,y)
+# }
+# head(z)
+# 
+# dat.compall.per <- cbind.data.frame(dat.compall.sum[,1:4], z)
+# dat.compall.per$X1.48 <- NULL
+```
+```{r cyanoovergrowth by site and depth}
+cyno <- dat.compall.per %>% 
+   group_by(Year, Site, Depth) %>% 
+   dplyr::summarize(aveCY = mean(CY), 
+             SE = sd(CY)/sqrt(n()))
+```
+
+```{r filter out beloi - Dilirock 10m for no scaling with pcomp PBL pD}
+# head(dat.compall)
+# dat.compall.sum <- dat.compall %>% dplyr::group_by(Site, Depth, Transect, H) %>%
+#    dplyr::summarize(tot.stat = sum(Number)) %>%
+#    spread(H, tot.stat, fill = 0)
+# head(dat.compall.sum)
+# 
+# bd10.compall <- dat.compall.sum %>% filter(Site == "Beloi" | Site == "DiliRock") %>%
+#    filter(Site == "Beloi" | Depth == "10m")
+# 
+# compall.tot <- apply(dat.compall.sum[,4:ncol(dat.compall.sum)], 1, sum)
+# 
+# x <- data.frame(1:9)
+# head(x)
+# 
+# for( i in 4:ncol(bd10.compall)){
+#    y <- bd10.compall[,i]/compall.tot*100
+#    x <- cbind(x,y)
+# }
+# head(x)
+# str(x)
+# 
+# bd10.compall.per <- cbind.data.frame(bd10.compall[,1:3], x)
+# bd10.compall.per$X1.9 <- NULL
+# 
+# head(bd10.compall.per)
+# ```
+# ```{r}
+# compall <- rbind(bd10.compall.per, compall.per.nobd10)
+# head(compall)
+```
+
+# 8 categories inc GAs
+```{r read and join combined comproimsed categories - 8 categories inc GAs}
+## checked with GA as separate category and averages less than 1% - grouped with other in compcat7
+categories <- read.csv(here::here("data/status_levels_join.csv"))
+
+comp8GA <- dat.compall.per %>% 
+   pivot_longer(cols = 5:ncol(dat.compall.per), names_to = 'H', values_to = 'Percent')%>% 
+   inner_join(categories, by = 'H') %>% 
+   mutate_if(is.character, as.factor)%>% 
+   group_by(Year, Site, Depth, Transect, Compcats8GA)%>% 
+   dplyr::summarize(totcat = sum(Percent)) %>% 
+   ungroup() 
+head(comp8GA)
+
+# wide format
+comp8GA_t_wide <- pivot_wider(comp8GA, names_from = 'Compcats8GA', 
+                            values_from = 'totcat')
+head(comp8GA_t_wide)
+# write file
+write.csv(comp8GA_t_wide, here::here('data/comp8GA_tave.csv'), row.names = T)
+```
+
+```{r comp 8 cataegories w GA averages by site, depth, year}
+comp8_yr_sited_ave <- comp8GA %>% 
+   group_by(Year, Site, Depth, Compcats8GA)%>% 
+   dplyr::summarize(aveper = mean(totcat))
+
+head(comp8_yr_sited_ave)
+
+# check total sum of transect = 100
+ check_comp8 <- comp8_yr_sited_ave %>% 
+    pivot_wider(names_from = 'Compcats8GA', values_from = 'aveper')%>% 
+    mutate(tot = BL + OTH + TL + CCA + AllAlgae + WS +  Healthy) 
+ View(check_comp8)
+```
+# GAs <1% prevlence for all sites
+# compromised categories inc healthy
+```{r read and join combined comproimsed categories}
+## checked with GA as separate category and averages less than 1% - grouped with other in compcat7
+
+
+comp7.combo <- dat.compall.per %>% 
+   pivot_longer(cols = 5:ncol(dat.compall.per), names_to = 'H', values_to = 'Percent')%>% 
+   inner_join(categories, by = 'H') %>% 
+   mutate_if(is.character, as.factor)%>% 
+   group_by(Year, Site, Depth, Transect, Compcats7)%>% 
+   dplyr::summarize(totcat = sum(Percent)) %>% 
+   ungroup() 
+head(comp7.combo)
+
+# wide format
+comp7_t_wide <- pivot_wider(comp7.combo, names_from = 'Compcats7', 
+                            values_from = 'totcat')
+head(comp7_t_wide)
+# write file
+write.csv(comp7_t_wide, here::here('data/comp7_tave.csv'))
+```
+```{r comp 7 averages by site, depth, year}
+comp7_yr_sited_ave <- comp7.combo %>% 
+   group_by(Year, Site, Depth, Compcats7)%>% 
+   dplyr::summarize(aveper = mean(totcat))
+
+head(comp7_yr_sited_ave)
+
+# check total sum of transect = 100
+ check_comp7 <- comp7_yr_sited_ave %>% 
+    pivot_wider(names_from = 'Compcats7', values_from = 'aveper')%>% 
+    mutate(tot = BL + OTH + TL + CCA + AllAlgae + WS +  Healthy) 
+ View(check_comp7)
+```
+
+```{r plot with first submission compcat7}
+comp7_yr_sited_ave$Depth <- relevel(comp7_yr_sited_ave$Depth, ref = '5m') # 5m as reference for depth
+
+# reorder compcat catetories Healthy on Bottom, WS on top
+
+ggplot(comp7_yr_sited_ave, aes(factor(Year), aveper, fill = Compcats7)) +
+          facet_grid(Depth ~ Site, switch = 'x') +
+    geom_bar(position="stack", stat="identity") +
+   ggtitle("Signs of Compromised Health 2015, 2017") +
+   theme_classic()
+```
+
+## 7 compromised health categories - manually
+```{r manual join of compromised health categories}
+comp8.combo <- dat.compall.per[,1:4]
+
+comp8.combo$BL <- dat.compall.per$BL + dat.compall.per$PBL + dat.compall.per$Pale +
+   dat.compall.per$FBl + dat.compall.per$PBT + dat.compall.per$PB + dat.compall.per$Tip + dat.compall.per$UB #focal bleaching
+ #no PBT
+
+comp8.combo$OTH <- dat.compall.per$BAR + dat.compall.per$BARN +dat.compall.per$Broken + dat.compall.per$BUR + dat.compall.per$contact+
+   dat.compall.per$Coral + dat.compall.per$Crabgall + dat.compall.per$DRU + dat.compall.per$FW + + dat.compall.per$INV +
+   dat.compall.per$Mucus + dat.compall.per$PIG +
+   dat.compall.per$PRED + dat.compall.per$`Pred?` + dat.compall.per$Pred + dat.compall.per$SED + 
+   dat.compall.per$MILLE + dat.compall.per$Mucus +
+   dat.compall.per$Soft + dat.compall.per$SoftCoral + dat.compall.per$SP + dat.compall.per$TUN + dat.compall.per$TUN + 
+ dat.compall.per$TRE +
+   dat.compall.per$upside + dat.compall.per$Xmas
+
+comp8.combo$TL <- dat.compall.per$whspots+ dat.compall.per$TL + dat.compall.per$whspot # dat.compall.per$WH no longer in columns
+   
+comp8.combo$CCA <- dat.compall.per$CCA
+
+comp8.combo$AllAlgae <- dat.compall.per$Chlorodesmis + dat.compall.per$CY +
+   dat.compall.per$HAL + dat.compall.per$Hali + dat.compall.per$MA + dat.compall.per$turf +
+   dat.compall.per$TUR
+
+comp8.combo$WS <- dat.compall.per$WS
+
+comp8.combo$GA <- dat.compall.per$GA
+
+head(comp8.combo)
+
+comp8.combo$Healthy <- w.site$pHealthy
+
+
+comph8.combo <- mutate(comp8.combo, tot = BL + OTH + TL + CCA + AllAlgae + WS + GA +  Healthy)
+head(comph8.combo)
+
+comp8.lcombo <- gather(comp8.combo, Comp, Percent, BL, AllAlgae, OTH, CCA, TL, WS)
+head(comp8.lcombo)
+comp8.lcombo$Comp <- as.factor(comp8.lcombo$Comp)
+levels(comp8.lcombo$Comp)
+```
+```{r}
+
+## diseases, WS added to comp.lcombo
+dis <- dat.compall.per[,1:3]
+dis$TRE <- dat.compall.per$TRE
+dis$WS <- dat.compall.per$WS
+dis$GA <- dat.compall.per$GA
+
+head(dis)
+
+compdis <- cbind(comp.combo, dis[4:6])
+head(compdis)
+write.csv(compdis, "Percent-CompDisease-TL2015-sdtrans.csv")
+```
+```{r 7 compcats inc health percent}
+comp15.7site <- summarySE(comp7.lcombo,  measurevar = "Percent", groupvars= c("Site", "Depth", "Comp"))
+head(comp15.7site)
+comp15.7site$Depth <- relevel(comp15.7site$Depth, ref = "5m")
+colnames(comp15.7site)[which(colnames(comp15.7site) == "Comp")] <- "Status"
+
+write.csv(comp15.7site, "TL15-compcats7-WS-site-summarySE.csv")
+
+h.site <- filter(stat.site, Status == "pHealthy")
+h.site$Status <- "Healthy"
+head(h.site)
+
+comph15.7 <- rbind(comp15.7site, h.site)
+head(comph15.7)
+write.csv(comph15.7, "TL15-comph7-WS-site-summarySE.csv")
+```
+
+```{r graph comp coniditions, echo = FALSE}
+ggplot(comph15.7, aes(Site, Percent, fill = Status)) +
+          facet_grid(Depth ~.) +
+    geom_bar(position="stack", stat="identity") +
+   ggtitle("Signs of Compromised Health 2015") +
+   theme_classic()
+```
+
+## status by genera count ----
+```{r}
+dat.gen <- dat %>% group_by(Site, Depth, Status, GEN.morph, GEN) %>%
+   summarize(tot.stat = sum(Number)) %>%
+   spread(Status, tot.stat, fill = 0) %>%
+   mutate(tot.coral = Healthy + Comp + Disease + Bleaching + Pale) %>%
+   filter(Bleaching != 0 | Pale != 0)
+
+dat.gen$Comp <- NULL
+dat.gen$Healthy <- NULL
+dat.gen$Disease <- NULL
+head(dat.gen)
+
+long.gen <- gather(dat.gen, Bleach, Number, Bleaching, Pale, factor_key = T)
+long.gen
+```
+```{r seriatopora}
+head(dat)
+dat.seri <- dat %>% group_by(Site, Depth, Transect) %>%
+   filter(GEN.morph == "SER") %>%
+   group_by(Site, Depth, Status, Transect, GEN) %>%
+   summarize(tot.stat = sum(Number)) %>%
+   spread(Status, tot.stat, fill = 0) %>%
+   mutate(tot.coral = Healthy + Comp  + Bleaching )
+head(dat.seri)
+```
+
+
+```{r graph # bleaching genera by site}
+long.gen$Depth <- relevel(long.gen$Depth, ref = "5m")
+ggplot(long.gen,  aes(GEN.morph, Number, fill = Bleach)) +
+   facet_grid(Depth ~Site) +
+    geom_bar(position=position_dodge(), stat="identity") +
+     theme(axis.text.x  = element_text(angle=90))
+
+setwd("C:/Users/jk845/OneDrive/Documents/Timor-Leste/2015-2017-CoralData")
+write.csv(long.gen, "TL2015-Bl-genera-sum.csv")
+
+```
+
+```{r subset by gen >1}
+long.gen1 <- filter(long.gen, Number > 1)
+long.gen1$GEN.morph <- as.factor(long.gen1$GEN.morph)
+levels(long.gen1$GEN.morph)
+
+ggplot(long.gen1,  aes(GEN.morph, Number, fill = Bleach)) +
+   facet_grid(Depth ~Site) +
+     geom_bar(position=position_dodge(), stat="identity") +
+  theme(axis.text.x  = element_text(angle=90)) +
+   ggtitle("Count of Colonies Bleaching by Site 2015")
+```
+   
+## status by genera sites combined ----
+```{r}
+dat.gen.ns <- dat %>% group_by( Depth, Status, GEN.morph ) %>%
+   summarize(tot.stat = sum(Number)) %>%
+   spread(Status, tot.stat, fill = 0) %>%
+   mutate(tot.coral = Healthy + Comp + Disease + Bleaching + Pale) %>%
+   filter(Bleaching != 0 | Pale != 0)
+
+dat.gen.ns$Comp <- NULL
+dat.gen.ns$Healthy <- NULL
+dat.gen.ns$Disease <- NULL
+head(dat.gen.ns)
+
+long.gen.ns <- gather(dat.gen, Bleach, Number, Bleaching, factor_key = T)
+
+```
+
+```{r graph # bleaching genera no site}
+
+long.gen.ns$Depth <- relevel(long.gen$Depth, ref = "5m")
+ggplot(long.gen.ns,  aes(GEN.morph, Number)) +
+   facet_grid(Depth ~.) +
+    geom_bar(position=position_dodge(), stat="identity") +
+     theme(axis.text.x  = element_text(angle=90)) +
+   ggtitle("Count of Bleaching Genera 2015")
+```
+
+
+
