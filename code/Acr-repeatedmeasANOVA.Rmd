@@ -12,17 +12,22 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r read in data, include=FALSE}
 library(here)
 library(readr)
-comp1517 <- read_csv(here::here("data/CoralHealth-2015-2017edit072020-R-genmorph.csv")) 
+comp1517 <- read_csv(here::here("data/CoralHealth-2015-2017edit042021-R-genmorph.csv")) 
 
-comp1517_factor <- comp1517 %>%  mutate(across(where(is_character),as_factor))
+library(dplyr)
+comp1517_factor <- comp1517 %>%  mutate(across(where(is.character),as.factor))
    
 comp1517_factor$Year <- as.factor(comp1517_factor$Year) # year also as a factor
 
 head(comp1517_factor)
 ```
 ```{r creatae unique transect id}
-comp1517_factor$long_id <- as.factor(paste(comp1517_factor$Site, comp1517_factor$Depth, comp1517_factor$Transect, sep = "_"))
+comp1517_factor$long_id <- as.factor(paste(comp1517_factor$Site,
+                                           comp1517_factor$Depth,
+                                           comp1517_factor$Transect,
+                                           sep = "_"))
 
+levels(comp1517_factor$long_id)
 #write.csv(levels(comp1517_factor$id), "unique_ids.csv")
 # write levels and add num id
 # read file with num id
@@ -33,7 +38,7 @@ comp1517_factor <- inner_join(comp1517_factor, ids, by = 'long_id')
 comp1517_factor$num_id <- as.factor(comp1517_factor$num_id)
 ```
 
-## R Markdown
+## Health Category summaries
 ```{r}
 distot <- comp1517_factor %>% 
    group_by(Year, H1) %>% 
@@ -62,28 +67,36 @@ library(dplyr)
 
 ACRcount <- comp1517_factor %>% 
    group_by(Year, Site, Depth, Transect, num_id, GEN, morph) %>% 
-   summarize(tot = sum(Number)) %>% 
-   filter(morph == "tab" | morph == "corym") %>% 
-      group_by(Year, Site, Depth, Transect,num_id, GEN) %>% 
-   summarize(totmorph = sum(tot)) %>% 
-      filter(GEN == "ACR")
+   summarize(tot = sum(Number))%>% 
+ 
+      group_by(Year, Site, Depth, Transect,num_id, GEN, morph) %>% 
+   summarize(totmorph = sum(tot))%>% 
+      filter(GEN == "ACR") %>% 
+      pivot_wider(names_from = morph, 
+                  values_from = totmorph,
+                  values_fill = 0) %>% 
+   pivot_longer(bush:bottle, names_to = 'morph', values_to = 'totmorph')
 
-library(ggpubr)
+ACRtab <- ACRcount %>% filter(morph == 'corym' | morph == 'tab') %>%
+   summarize(tottab = sum(totmorph))
+
+
+library(ggpubr) 
 ggboxplot(
-  ACRcount, x = "Site", y = "totmorph", facet.by = 'Depth',
+  ACRtab, x = "Site", y = "tottab", facet.by = 'Depth',
   color = "Year", palette = "jco"
   )
 
-hist(ACRcount$totmorph)
-hist(log10(ACRcount$totmorph))
-qqnorm(log10(ACRcount$totmorph))
+hist(ACRtab$tottab)
+hist(log10(ACRtab$tottab))
+qqnorm(log10(ACRtab$tottab+.1))
 
-acrtab.an <- aov(log10(totmorph) ~ Site * Depth * Year, data = ACRcount)
+acrtab.an <- aov(log10(tottab+.1) ~ Site * Depth * Year, data = ACRtab)
 summary(acrtab.an)
 plot(acrtab.an)
 ```
 ```{r repeated measures anova tabulate}
-# nomral anova
+# normall anova
 summary(aov(log10(totmorph) ~ Year + Site + Depth + Error(num_id), data = ACRcount))
 
 # mixed model approach
