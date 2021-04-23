@@ -22,6 +22,24 @@ gen$Year <- as.factor(gen$Year)  # year also as a factor
 gen$Depth <- relevel(gen$Depth, ref = "5m")  # relevel so depth goes 5 then 10 m
 ```
 
+```{r average number of corals per site and depth}
+totcoral <- gen %>% 
+   dplyr::select(ACA:PORmass) %>% 
+   rowSums()
+
+avecoral <- cbind(gen[,1:5], totcoral) %>% 
+   group_by(Site, Depth, Year) %>% 
+   dplyr::summarise(total = sum(totcoral))%>%
+   group_by(Site, Depth) %>% 
+   dplyr::summarise(ave = mean(total), SE = sd(total)/sqrt(n()))
+
+# col per m/2
+density <- avecoral$ave/60 
+cbind(avecoral[,1:2], density)
+   
+```
+
+
 ```{r presence/absence total gen graph}
 gen1 <- gen[which(colnames(gen) == 'ACA'):ncol(gen)]
 head(gen1)
@@ -49,7 +67,7 @@ gen.sum <- cbind(gen[1:5], gen.sum)
 ## Graph genera diversity
 
 ```{r summarySE pres/abs gen, graph}
-gen.sum.se <- summarySE(gen.sum, "gen.sum", c("Year", "Site", "Depth"))
+gen.sum.se <- summarySE(gen.sum, "gen.sum", c("Site", "Depth"))
 
 library(ggplot2)
 ggplot(gen.sum.se, aes(Year, gen.sum)) + geom_bar(stat = "identity") + facet_grid(Depth~Site, switch = "x") +
