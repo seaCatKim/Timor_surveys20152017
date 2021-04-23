@@ -80,29 +80,33 @@ ACRcount <- comp1517_factor %>%
 ACRtab <- ACRcount %>% filter(morph == 'corym' | morph == 'tab') %>%
    summarize(tottab = sum(totmorph))
 
-
 library(ggpubr) 
 ggboxplot(
   ACRtab, x = "Site", y = "tottab", facet.by = 'Depth',
   color = "Year", palette = "jco"
   )
 
+# check nomality
 hist(ACRtab$tottab)
 hist(log10(ACRtab$tottab))
 qqnorm(log10(ACRtab$tottab+.1))
+library(car)
+leveneTest(tottab ~ Year * Site * Depth, data = ACRtab)
 
 acrtab.an <- aov(log10(tottab+.1) ~ Site * Depth * Year, data = ACRtab)
 summary(acrtab.an)
 plot(acrtab.an)
 ```
 ```{r repeated measures anova tabulate}
-# normall anova
-summary(aov(log10(totmorph) ~ Year + Site + Depth + Error(num_id), data = ACRcount))
+# normal anova
+summary(aov(log10(tottab + .1) ~ Year * Site * Depth +
+               Error(num_id), data = ACRtab))
 
 # mixed model approach
 library(nlme)
-acr.lme <- lme(log10(totmorph) ~ Year +Site + Depth, random = ~1|num_id,
-               data = ACRcount, na.action = na.exclude)
+acr.lme <- lme(log10(tottab + .1 ) ~ Year *Site * Depth, 
+               random = ~1|num_id,
+               data = ACRtab, na.action = na.exclude)
 acr.lme
 summary(acr.lme)
 library(car)
@@ -111,88 +115,77 @@ library(emmeans)
 emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
 
 #install.packages("devtools")
-devtools::install_github("easystats/easystats")
-library(easystats)
+#devtools::install_github("easystats/easystats")
+#library(easystats)
 
 #library(psycho)
 #results <- psycho::analyze(acr.lme)
 
 # random intercept and slope
-acr.lme2 <- lme(log10(totmorph) ~ Year +Site + Depth, random = ~Year|num_id,
-               data = ACRcount, na.action = na.exclude)
+acr.lme2 <- lme(log10(tottab + .1) ~ Year *Site * Depth, 
+                random = ~Year|num_id,
+               data = ACRtab, na.action = na.exclude)
 acr.lme2
 summary(acr.lme2)
-Anova(acr.lme)
+Anova(acr.lme2)
 emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
 
-ACRtabave <- ACRcount %>% 
-   group_by( Site, GEN) %>% 
-   summarize(ave = mean(totmorph), SE = sd(totmorph)/n()) 
+anova(acr.lme, acr.lme2)  # not significantly different
 ```
+```{r average number of tabulate acroporids per site}
+ACRtabave <- ACRtab %>% 
+   group_by( Site, GEN) %>% 
+   summarize(ave = mean(tottab), SE = sd(tottab)/n())
+ACRtabave
+```
+
 # Anova for branching acroporids
 ```{r count acropora branching}
-ACRbracount <- comp1517_factor %>% 
-   group_by(Year, Site, Depth, Transect, num_id, GEN, morph) %>% 
-   summarize(tot = sum(Number)) %>% 
+ACRbracount <- ACRcount %>% 
    filter(morph == "br" | morph == "bush" | morph == "stag") %>% 
-      group_by(Year, Site, Depth, Transect, num_id, GEN) %>% 
-   summarize(totmorph = sum(tot)) %>% 
-      filter(GEN == "ACR")
+   summarize(totbra = sum(totmorph))
 
+# boxplot
 ggboxplot(
-  ACRbracount, x = "Site", y = "totmorph", facet.by = 'Depth',
+  ACRbracount, x = "Site", y = "totbra", facet.by = 'Depth',
   color = "Year", palette = "jco"
   )
 
-hist(ACRbracount$totmorph)
-hist(log10(ACRbracount$totmorph))
-qqnorm(log10(ACRcount$totmorph))
-
-ACRbraave <- ACRbracount %>% 
-   group_by( Site, GEN) %>% 
-   summarize(ave = mean(totmorph), SE = sd(totmorph)/n()) 
-ACRbraave
+# check normality
+hist(ACRbracount$totbra + 0.1)
+hist(log10(ACRbracount$totbra +0.1))
+qqnorm(log10(ACRbracount$totbra +0.1))
+leveneTest(totbra ~ Year * Site * Depth, data = ACRbracount)
 ```
 ```{r repeated measures anova branching}
-
-acrbra.lme <- lme(log10(totmorph) ~ Year +Site + Depth, random = ~1|num_id,
+acrbra.lme <- lme(log10(totbra + 0.1) ~ Year +Site + Depth, 
+                  random = ~1|num_id,
                data = ACRbracount, na.action = na.exclude)
 acrbra.lme
 summary(acrbra.lme) # lowest AIC
 Anova(acrbra.lme)
 emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
+emmeans(acr.lme, list(pairwise ~ Year), adjust = "tukey")
 
 # random intercept and slope
-acrbra.lme2 <- lme(log10(totmorph) ~ Year +Site + Depth, random = ~Year|num_id,
+acrbra.lme2 <- lme(log10(totbra + 0.1) ~ Year +Site + Depth, random = ~Year|num_id,
                data = ACRbracount, na.action = na.exclude)
 acrbra.lme2
 summary(acrbra.lme2)
-Anova(acrbra.lme)
-emmeans(acrbra.lme, list(pairwise ~ Site), adjust = "tukey")
+Anova(acrbra.lme2)
 
+anova(acrbra.lme, acrbra.lme2) # models not significantly different 
 ```
 
-```{r repeated measured ACR tab count with rstatix package}
-ACRcount$T.orig <- 1:24
+```{r average branching acroporids}
+# average branching acroporid per site
+ACRbraave_site <- ACRbracount %>% 
+   group_by( Site, GEN) %>% 
+   summarize(ave = mean(totbra), SE = sd(totbra)/n()) 
+ACRbraave
 
-ACRcount %>%
-  group_by(Site, Depth, Year) %>%
-  get_summary_stats(totmorph, type = "mean_sd")
+ACRbraave_yr <- ACRbracount %>% 
+   group_by( Year, GEN) %>% 
+   summarize(ave = mean(totbra), SE = sd(totbra)/n()) 
 
-library(ggpubr)
-ggboxplot(
-  ACRcount, x = "Site", y = "totmorph", facet.by = 'Depth',
-  color = "Year", palette = "jco"
-  )
-
-library(rstatix)
-tab.aov <- anova_test(data = ACRcount, dv = totmorph, wid = num_id, 
-                      within = c(Site, Depth, Year))
-colnames(ACRcount)
-
-
-anova_test(data = ACRcount, totmorph ~ Year +Site + Depth +
-              Error(num_id/(Year + Site + Depth)))
 ```
-
-
