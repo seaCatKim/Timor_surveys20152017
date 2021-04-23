@@ -2,7 +2,7 @@
 # Catherine kim
 # April 23, 2021
 
-## Read in data from coral health 15x2 m belt transects
+## Read in data from coral health 15 m line intercept transects
 comp15.l <- read.csv(here::here("data/TL2015-BenthicCategories_Site_Depth-long.csv"))
 comp15.l$X <- NULL  # remove first column which is row number
 head(comp15.l)
@@ -33,8 +33,6 @@ head(comp.2yr)
 
 comp.2yr$Year <- as.factor(comp.2yr$Year)
 
-write.csv(comp.2yr, 'data/bencomp-transect-20152017.csv')
-
 # add unique transect ids
 library(tidyr)
 library(dplyr)
@@ -53,4 +51,9 @@ coral.ave <- comp.2yr %>%
    group_by(Site2, Depth, Year) %>% 
    dplyr::summarize(corave = mean(HardCoral),
                     corSE = sd(HardCoral)/sqrt(n()))
-```
+
+write.csv(comp.2yr, 'data/bencomp-transect-20152017.csv')
+
+
+
+
