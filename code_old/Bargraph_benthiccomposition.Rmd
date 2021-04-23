@@ -155,8 +155,5 @@ ggplot(ben.2yr, aes(x=year,y = ave, fill= factor(Major.Category,
          panel.background = element_blank(),
          text = element_text(size = 16)) +
    scale_fill_discrete(name="Benthic Category")
-
-ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.pdf'),
-       height = 4, width = 7)
 ```
 
