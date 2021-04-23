@@ -39,12 +39,14 @@ head(compd.t)
 library(Rmisc)
 library(tidyr)
 library(dplyr)
-dis <- compd.t %>% 
+
+# ave disease aross years at site and depth
+compd.t %>% 
    mutate(disease = WS + GA) %>%
    group_by(Site, Depth ) %>% 
    dplyr::summarize(dave = mean(disease),
              SE = sd(disease)/sqrt(n()))
-dis
+
 
 hist(compd.t$WS + compd.t$GA)
 
@@ -75,7 +77,8 @@ ws.ga.styr <- compd.t %>%
 ws.ga.styr
 ```
 
-```{r ave comp health across sites and years}
+```{r ave comp health }
+# across sites, depth, and years
 compave <- compd.t %>% 
    mutate(comp = CCA + BL + AllAlgae + TL + OTH + GA) %>% 
    group_by(Site, Depth, Transect, Year) %>% 
@@ -86,6 +89,13 @@ compave <- compd.t %>%
              Se = sd(totcomp)/sqrt(n()))
 compave
 
+# across site and depth, ave across years
+compd.t %>% 
+   mutate(comp = CCA + BL + AllAlgae + TL + OTH) %>% 
+   group_by(Site, Depth) %>% 
+   dplyr::summarize(avecomp = mean(comp), SE = sd(comp)/sqrt(n()))
+
+# overall compromised health average
 mean(compave$cave)
 sd(compave$cave)/sqrt(length(compave))
 ```
@@ -128,12 +138,6 @@ qqnorm(sqrt(compd.t$BL))
 
 leveneTest((BL)~Year*Site*Depth, compd.t)
 leveneTest((BL)~Year*Site*Depth, trans.comp) # not significant
-bl.anE <- aov(sqrt(BL)~Site*Depth + Error(Year), trans.comp)
-summary(bl.anE)
-
-bl.an <- aov((BL)~Year*Site*Depth, trans.comp)
-summary(bl.an)
-TukeyHSD(bl.an)
 ```
 ```{r bleaching summary stats and plot}
 bl.se <- summarySE(compd.t, "BL", c("Year", "Site", 'Depth'))
@@ -146,112 +150,6 @@ ggboxplot(
   color = "Year", palette = "jco"
   )
 ```
-```{r bleaching lmer repeated anova}
-library(nlme)
-bl.lme <- lme(sqrt(BL) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t,
-              na.action = na.exclude)
-bl.lme
-summary(bl.lme)
-library(car)
-Anova(bl.lme) # year:site:depth interaction
-library(emmeans)
-bl.tuk <- emmeans(bl.lme, list(pairwise ~ Year:Site:Depth), adjust = "tukey")
-bl.tukpair <- as.data.frame(bl.tuk$`pairwise differences of Year, Site, Depth`)
-
-bl.tukpair[which(bl.tukpair$p.value < 0.05),]
-```
-# algae overgrowth anova
-```{r anova algae overgrowth}
-hist(compd.t$AllAlgae + compd.t$CCA)
-qqnorm(compd.t$AllAlgae + compd.t$CCA)
-qqnorm(compd.t$AllAlgae)
-leveneTest((AllAlgae)~Year*Site*Depth, trans.comp)
-aa.an <- aov(AllAlgae~Year*Site*Depth, trans.comp)
-summary(aa.an)
-TukeyHSD(aa.an)
-
-ggboxplot(
-  data = compd.t, x = "Site", y = "AllAlgae", 
-  color = "Year", palette = "jco"
-  )
-
-aa.se <- summarySE(compd.t, "AllAlgae", c("Year", "Site"))
-aa.se
-```
-```{r algae lmer repeated anova}
-aa.lme <- lme((AllAlgae) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t, na.action = na.exclude)
-aa.lme
-summary(aa.lme)
-Anova(aa.lme)  # Year:site interaction
-emmeans(aa.lme, list(pairwise ~ Year:Site), adjust = "tukey")
-```
-## CCA anovas
-```{r CCCA}
-hist(compd.t$CCA)
-
-compd.t$slogCCA <- log10((compd.t$CCA * (N-1) + .5)/N)
-
-hist((compd.t$slogCCA))
-#qqnorm(log10(compd.t$CCA+1))
-
-qqnorm(sqrt(compd.t$CCA))
-leveneTest(sqrt(CCA)~Year*Site*Depth, trans.comp) # not significant
-cca.an <- aov(sqrt(CCA)~Year*Site*Depth, trans.comp)
-summary(cca.an)
-TukeyHSD(cca.an)
-
-cca.se <- summarySE(compd.t, "CCA", c("Year", "Site"))
-
-ggboxplot(
-  data = compd.t, x = "Site", y = "CCA", facet.by = 'Depth',
-  color = "Year", palette = "jco"
-  )
-```
-
-```{r CCA lmer repeatd anova}
-cca.lme <- lme((CCA) ~ Year * Site*Depth, random = ~1|num_id, data = trans.comp,
-             na.action = na.exclude)
-cca.lme
-summary(cca.lme)
-Anova(cca.lme)  # sig year:site, site:depth interactions
-emmeans(cca.lme, list(pairwise ~ Year:Site), adjust = "tukey")
-emmeans(cca.lme, list(pairwise ~ Site:Depth), adjust = "tukey")
-```
-
-## other not included
-```{r anova other compromised health}
-hist(sqrt(compd.t$OTH))
-qqnorm(sqrt(compd.t$OTH))
-leveneTest(sqrt(OTH)~Year*Site*Depth, trans.comp)
-oth.an <- aov(sqrt(OTH)~Year*Site*Depth, trans.comp)
-summary(oth.an)
-TukeyHSD(oth.an)
-```
-```{r anova tissue loss}
-hist(compd.t$TL)
-#hist(log10(compd.t$TL+1))
-hist(sqrt(compd.t$TL))
-qqnorm(sqrt(compd.t$TL))
-leveneTest((TL)~Year*Site*Depth, trans.comp) # not sig
-
-TL.an <- aov(sqrt(TL)~Year*Site*Depth, trans.comp)
-summary(TL.an)
-
-ggboxplot(
-  data = compd.t, x = "Site", y = "TL", facet.by = 'Depth',
-  color = "Year", palette = "jco"
-  )
-```
-```{r TL lmer repeated anova}
-tl.lme <- lme((TL) ~ Year * Site*Depth, random = ~1|num_id, data = trans.comp,
-             na.action = na.exclude)
-tl.lme
-summary(tl.lme)
-Anova(tl.lme)  # sig year
-emmeans(tl.lme, list(pairwise ~ Year), adjust = "tukey")
-```
-
-
 
 # Healthy stats
 ```{r healthy hist plot}
@@ -299,51 +197,3 @@ comp.ave <- compd.t %>%
 bl.ave <- summarySE(compd.t, "BL", c("Year", "Site"))
 ws.ave <- summarySE(compd.t, "WS", c("Year", "Site"))
 ```
-
-# WS stats ----
-# repeated measures Anova not included in thesis
-```{r}
-hist(compd.t$WS)
-qqnorm(compd.t$WS)
-shapiro.test(compd.t$WS)
-
-library(ggpubr)
-ggboxplot(
-  compd.t, x = "Site", y = "WS", facet.by = 'Depth',
-  color = "Year", palette = "jco"
-  )
-
-N <- nrow(compd.t)
-compd.t$slogWS <- log10((compd.t$WS * (N-1) + .5)/N)
-hist(compd.t$slogWS)
-qqnorm(log10(compd.t$WS))
-qqline(log10(compd.t$WS))
-shapiro.test(compd.t$slogWS)
-
-# anova with aov
-ws.an <- aov(WS~Year*Site*Depth, data = compd.t)
-summary(ws.an)
-plot(ws.an)
-
-ws.an2 <- aov(slogWS~Year*Site*Depth, data = compd.t)
-summary(ws.an)
-plot(ws.an)
-```
-```{r lmer repeated anova of WS}
-ws.lme <- lme(WS ~ Year * Site * Depth, random = ~1|num_id, data = compd.t,
-              na.action = na.exclude)
-ws.lme
-summary(ws.lme) # lowest AIC
-Anova(ws.lme)
-emmeans(ws.lme, list(pairwise ~ Site), adjust = "tukey")
-
-# lmer with slog
-logws.lme <- lme(slogWS ~ Year * Site * Depth, random = ~1|num_id, data = compd.t,
-              na.action = na.exclude)
-logws.lme
-summary(logws.lme) # lowest AIC
-Anova(logws.lme)
-emmeans(logws.lme, list(pairwise ~ Site), adjust = "tukey")
-
-```
-

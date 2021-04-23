@@ -89,17 +89,7 @@ labs(x = "", y = "Percent") +
    theme(axis.text.x = element_text(hjust = 0.5),
          legend.title = element_blank())+
    scale_fill_brewer(palette="RdYlBu")
-ggsave(here::here('figures/stacked-comphealth-20152017-nodepth.jpg', width = 7, height = 4))
-```
-
-
-```{r join Site to Site2 urban/rural names}
-
-
-# compall <- full_join(compall, site2, by = "Site")
-# 
- compall$SiteYr <- paste(compall$Site2, compall$X, sep = "-")
-# head(compall)
+ggsave(here::here('figures/stacked-comphealth-20152017-nodepth.jpg'), width = 7, height = 4)
 ```
 
 ## MEANS for paper ----
@@ -110,9 +100,3 @@ healthy.aveyr <- compall %>% filter(Status == "Healthy") %>%
    summarySE("Percent", "X")
    healthy.aveyr
 ```
-
-## permanova ----
-```{r}
-
-```
-

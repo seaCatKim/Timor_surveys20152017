@@ -333,7 +333,7 @@ comp8GA_t_wide <- pivot_wider(comp8GA, names_from = 'Compcats8GA',
                             values_from = 'totcat')
 head(comp8GA_t_wide)
 # write file
-write.csv(comp8GA_t_wide, here::here('data/comp8GA_tave.csv'), row.names = T)
+write.csv(comp8GA_t_wide, here::here('data/comp8GA_tave.csv'), row.names = F)
 ```
 
 ```{r comp 8 cataegories w GA averages by site, depth, year}
@@ -369,7 +369,7 @@ comp7_t_wide <- pivot_wider(comp7.combo, names_from = 'Compcats7',
                             values_from = 'totcat')
 head(comp7_t_wide)
 # write file
-write.csv(comp7_t_wide, here::here('data/comp7_tave.csv'))
+write.csv(comp7_t_wide, here::here('data/comp7_tave.csv'), row.names = F)
 ```
 ```{r comp 7 averages by site, depth, year}
 comp7_yr_sited_ave <- comp7.combo %>% 
