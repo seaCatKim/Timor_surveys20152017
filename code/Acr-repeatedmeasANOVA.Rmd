@@ -1,7 +1,7 @@
 ---
-title: "count-dis-ACRtab"
-author: "CKim"
-date: "November 7, 2018"
+title: "Acropora counts, analysis by morphology"
+author: "Caterine Kim"
+date: "April 23, 2020"
 output: html_document
 ---
 
@@ -21,47 +21,22 @@ comp1517_factor$Year <- as.factor(comp1517_factor$Year) # year also as a factor
 
 head(comp1517_factor)
 ```
-```{r creatae unique transect id}
+```{r create unique transect id}
 comp1517_factor$long_id <- as.factor(paste(comp1517_factor$Site,
                                            comp1517_factor$Depth,
                                            comp1517_factor$Transect,
                                            sep = "_"))
 
 levels(comp1517_factor$long_id)
-#write.csv(levels(comp1517_factor$id), "unique_ids.csv")
-# write levels and add num id
-# read file with num id
+
 ids <- read.csv(here::here("data/unique_ids_wnum.csv"))
 
 library(dplyr)
 comp1517_factor <- inner_join(comp1517_factor, ids, by = 'long_id')
 comp1517_factor$num_id <- as.factor(comp1517_factor$num_id)
 ```
-
-## Health Category summaries
-```{r}
-distot <- comp1517_factor %>% 
-   group_by(Year, H1) %>% 
-   summarize(total = sum(Number))
-
-
-distotgen <- comp1517_factor %>% 
-   group_by(Year,GEN, morph,H1) %>% 
-   summarize(total = sum(Number))
-
-WStotgen <- comp1517_factor %>% 
-   group_by(Year,GEN, morph,H1) %>% 
-   summarize(total = sum(Number)) %>% 
-   filter(H1 == "WS")
-
-GAtotgen <- comp1517_factor %>% 
-   group_by(Year,GEN, morph,H1) %>% 
-   summarize(total = sum(Number)) %>% 
-  filter(H1 == "GA")
-```
-
-
-```{r count acropora tabs}
+# Tabulate acroporid count and analysis
+```{r count acropora tabulate colonies}
 library(tidyr)
 library(dplyr)
 
@@ -92,10 +67,6 @@ hist(log10(ACRtab$tottab))
 qqnorm(log10(ACRtab$tottab+.1))
 library(car)
 leveneTest(tottab ~ Year * Site * Depth, data = ACRtab)
-
-acrtab.an <- aov(log10(tottab+.1) ~ Site * Depth * Year, data = ACRtab)
-summary(acrtab.an)
-plot(acrtab.an)
 ```
 ```{r repeated measures anova tabulate}
 # normal anova
@@ -113,13 +84,6 @@ library(car)
 Anova(acr.lme)
 library(emmeans)
 emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
-
-#install.packages("devtools")
-#devtools::install_github("easystats/easystats")
-#library(easystats)
-
-#library(psycho)
-#results <- psycho::analyze(acr.lme)
 
 # random intercept and slope
 acr.lme2 <- lme(log10(tottab + .1) ~ Year *Site * Depth, 
@@ -139,7 +103,7 @@ ACRtabave <- ACRtab %>%
 ACRtabave
 ```
 
-# Anova for branching acroporids
+# Branching acroporid count and analysis
 ```{r count acropora branching}
 ACRbracount <- ACRcount %>% 
    filter(morph == "br" | morph == "bush" | morph == "stag") %>% 
@@ -187,5 +151,4 @@ ACRbraave
 ACRbraave_yr <- ACRbracount %>% 
    group_by( Year, GEN) %>% 
    summarize(ave = mean(totbra), SE = sd(totbra)/n()) 
-
 ```
