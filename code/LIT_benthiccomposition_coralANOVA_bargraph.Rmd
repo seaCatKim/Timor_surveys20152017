@@ -1,23 +1,18 @@
 ---
 title: "Repeated measures anova of hard coral from benthic composition"
-author: "CKim"
-date: "12/14/2020"
+author: "Catherine Kim"
+date: "April 23, 2021"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
-library(Rmisc)
-library(tidyr)
-library(dplyr)
-library(ggplot2)
-library(here)
 ```
 
 ## Statistics on benthic composition from 15m Line Intercept Transects (LIT) in Timor-Leste from 2015 and 2017
 
 ```{r Read in data from 15 m line intercept transects}
+library(here)
 bencomp <- read.csv(here::here('data/bencomp-transect-20152017.csv'))
 
 # change variables to factors
@@ -57,6 +52,8 @@ sig.pair.cor
 
 ```{r average coral cover}
 ## summarized by coral site depth year
+library(tidyr)
+library(dplyr)
 coral.ave <- bencomp
    group_by(Site2, Depth, Year) %>% 
    dplyr::summarize(corave = mean(HardCoral),
@@ -69,3 +66,38 @@ ggboxplot(
   )
 ```
 
+## Stacked bargraph of LIT benthic composition
+```{r pivot long for graph}
+library(dplyr)
+bencomp_long <- bencomp %>% 
+   pivot_longer(CCA:Turf, names_to = 'Major.Category', values_to = 'Percent') %>% 
+   group_by(Year, Site2, Depth, Major.Category) %>% 
+   dplyr::summarize(ave = mean(Percent))
+
+```
+
+```{r stacked bar graph of 2015 and 2017}
+bencomp_long$Major.Category <- as.factor(bencomp_long$Major.Category)
+levels(bencomp_long$Major.Category)
+bencomp_long$Major.Category <- relevel(bencomp_long$Major.Category, ref = "HardCoral")
+bencomp$Depth <- relevel(bencomp$Depth, ref = "5m")
+head(bencomp_long)
+
+library(ggplot2)
+ggplot(bencomp_long, aes(x=Year,y = ave, fill= factor(Major.Category,
+                                        levels = c("Turf", "Substrate.Sand", "SoftCoral",
+                                                   "Macroalgae", "Invert", "CCA",
+                                                   "HardCoral")))) + 
+   geom_bar( position="stack", stat="identity") +   facet_grid(Depth~Site2,
+            switch = "x") +
+   labs(title = "Benthic Composition", x = "Site and Year", y = "Percent") +
+      theme_classic() +
+   #theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+         panel.background = element_blank(),
+         text = element_text(size = 16)) +
+   scale_fill_discrete(name="Benthic Category")
+
+ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.pdf'),
+       height = 4, width = 7)
+```
