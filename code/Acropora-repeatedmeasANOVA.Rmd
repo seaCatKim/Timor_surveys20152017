@@ -168,9 +168,10 @@ ggplot(ACRbracount,
        aes(x = Year, y = totbra, fill = Depth)) +
    geom_boxplot() +
    facet_wrap(vars(Site)) +
-   theme_classic()
+   theme_classic() +
+   theme(text = element_text(size = 16))
 
 # save plot as pdf and jpg
-ggsave(here::here("figures/ACRbra_counts_site_d_yr.pdf"))
-ggsave(here::here("figures/ACRbra_counts_site_d_yr.jpg"))
+ggsave(here::here("figures/ACRbra_counts_site_d_yr.pdf"), width = 7, height = 4)
+ggsave(here::here("figures/ACRbra_counts_site_d_yr.jpg"), width = 7, height = 4)
 ```
