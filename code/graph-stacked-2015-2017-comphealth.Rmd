@@ -1,5 +1,5 @@
 ---
-title: "graph-2015-2017TL-comphealth"
+title: "Disease and compromised heatlh 2015-2017"
 author: "Catherine Kim"
 date: "April 23, 2021"
 output: pdf_document
@@ -10,9 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r read in  Site to Site2 urban/rural names}
-
 library(tidyr)
 library(dplyr)
+library(ggplot2)
 
 site2 <- read.csv(here::here("data/Site-Site2.csv"))
 colnames(site2)[1] <- "Site"
@@ -46,6 +46,12 @@ compall <- compdat %>%
    dplyr::summarize(avePer = mean(Percent),
                                   SE = sd(Percent)/sqrt(n()))
 compall
+```
+```{r mean of healthy coral }
+library(Rmisc)
+healthy.aveyr <- compall %>% filter(Status == "Healthy") %>%
+   summarySE("avePer")
+healthy.aveyr
 ```
 
 ```{r old read in data }
@@ -92,11 +98,4 @@ labs(x = "", y = "Percent") +
 ggsave(here::here('figures/stacked-comphealth-20152017-nodepth.jpg'), width = 7, height = 4)
 ```
 
-## MEANS for paper ----
-```{r}
-head(compall.order)
 
-healthy.aveyr <- compall %>% filter(Status == "Healthy") %>%
-   summarySE("Percent", "X")
-   healthy.aveyr
-```
