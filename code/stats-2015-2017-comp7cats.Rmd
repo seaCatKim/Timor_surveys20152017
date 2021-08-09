@@ -9,12 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## read in transect data with comp7 cats inc ws and GAs
+## read in transect data with comp7 cats inc white syndrome (WS) and growth anomalies (GAs)
 
 ```{r read in data with growth anomaolies (GAs) separated }
 compd.t <- read.csv(here::here('data/comp8GA_tave.csv'))
 head(compd.t)
 ```
+
 ```{r create unique transect id}
 compd.t$long_id <- as.factor(paste(compd.t$Site, compd.t$Depth, compd.t$Transect, sep = "_"))
 
@@ -35,6 +36,7 @@ head(compd.t)
 ```
 
 ## summary stats
+
 ```{r total disease ave by site and depth}
 library(Rmisc)
 library(tidyr)
@@ -62,6 +64,7 @@ compd.t %>%
 
 12.04151	/ 26.84603	
 ```
+
 ```{r prevalence WS and GAs by year}
 ws.ga.yr <- compd.t %>% 
    group_by( Year) %>% 
@@ -99,6 +102,7 @@ compd.t %>%
 mean(compave$cave)
 sd(compave$cave)/sqrt(length(compave))
 ```
+
 ```{r ave disease and comp health by site year}
 cd <- compd.t %>% 
    dplyr::mutate(compd = CCA + BL + AllAlgae + TL + OTH + GA + WS) %>% 
@@ -125,8 +129,8 @@ hist(compd.tl$Percent)
 hist(sqrt(compd.tl$Percent))
 ```
 
+## ANOVAS of compromised health categories 
 
-## anovas ----
 ```{r bleaching hist and plot}
 hist(compd.t$BL)
 qqnorm(compd.t$BL)
@@ -137,8 +141,8 @@ qqnorm(sqrt(compd.t$BL))
 #qqplot(sqrt(compd.t$BL))
 
 leveneTest((BL)~Year*Site*Depth, compd.t)
-leveneTest((BL)~Year*Site*Depth, trans.comp) # not significant
 ```
+
 ```{r bleaching summary stats and plot}
 bl.se <- summarySE(compd.t, "BL", c("Year", "Site", 'Depth'))
 bl.se
@@ -160,6 +164,7 @@ ggboxplot(
   compd.t, x = "Site", y = "Healthy", facet.by = 'Depth',
   color = "Year", palette = "jco"
   )
+
 ```
 ```{r healthy repeated measures}
 h.lme <- lme((Healthy) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t,
@@ -172,6 +177,7 @@ emmeans(h.lme, list(pairwise ~ Site), adjust = "tukey")
 emmeans(h.lme, list(pairwise ~ Depth), adjust = "tukey")
 
 ```
+
 ```{r summarize healthy by site and year}
 library(Rmisc)
 
