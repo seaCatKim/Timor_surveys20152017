@@ -54,26 +54,8 @@ healthy.aveyr <- compall %>% filter(Status == "Healthy") %>%
 healthy.aveyr
 ```
 
-```{r old read in data }
-# comph15 <- read.csv("TL15-comph7-WS-site-summarySE-nameedit.csv")
-# comph15$X <- 2015
-# comph17 <- read.csv("TL17-per-comp7-h-d-summarySE.csv")  # in 2017Trip/CoralDAta
-# head(comph17)
-# comph17$X <- 2017
-# 
-# head(comph15)
-# head(comph17)
-# 
-# compall <- rbind(comph15, comph17)
-# head(compall)
-# levels(compall$Status)
-# compall$Depth <- relevel(compall$Depth, ref = "5m")
-# 
-# compall$Site <- as.factor(compall$Site)
-# levels(compall$Site)[levels(compall$Site) == "Manatutu"] <- "Manatuto"
-```
-
 # stacked graph without depth facet
+
 ```{r groupby year and site}
 compall_nodepth <- compdat %>% 
    group_by(Year, Site2, Status) %>% 
