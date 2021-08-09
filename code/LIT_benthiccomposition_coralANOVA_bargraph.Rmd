@@ -54,16 +54,16 @@ sig.pair.cor
 ## summarized by coral site depth year
 library(tidyr)
 library(dplyr)
-coral.ave <- bencomp
+coral.ave <- bencomp %>% 
    group_by(Site2, Depth, Year) %>% 
    dplyr::summarize(corave = mean(HardCoral),
                     corSE = sd(HardCoral)/sqrt(n()))
-   
-library(ggpubr) 
-ggboxplot(
-  ACRtab, x = "Site", y = "tottab", facet.by = 'Depth',
-  color = "Year", palette = "jco"
-  )
+#    
+# library(ggpubr) 
+# ggboxplot(
+#   ACRtab, x = "Site", y = "tottab", facet.by = 'Depth',
+#   color = "Year", palette = "jco"
+#   )
 
 # site and depth average across years
 bencomp %>% 
@@ -73,6 +73,7 @@ bencomp %>%
 ```
 
 ## Stacked bargraph of LIT benthic composition
+
 ```{r pivot long for graph}
 library(dplyr)
 bencomp_long <- bencomp %>% 
@@ -101,8 +102,8 @@ ggplot(bencomp_long, aes(x=Year,y = ave, fill= factor(Major.Category,
    #theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
    theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
          panel.background = element_blank(),
-         text = element_text(size = 16)) +
-   scale_fill_discrete(name="Benthic Category")
+         text = element_text(size = 16)) 
+   #scale_fill_discrete(name="Benthic Category")
 
 ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.pdf'),
        height = 4, width = 7)
