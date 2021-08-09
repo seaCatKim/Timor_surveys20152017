@@ -1,5 +1,5 @@
 ---
-title: "genera diversity"
+title: "Analysis of genera diversity"
 author: "Catherine Kim"
 date: "April 23, 2021"
 output: html_document
@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Genera diversity analysis of coral belt transects 
+
+Read in the data of coral genera counted on 15 x 2 belt transects. 
 
 ```{r read in 2015 and 2017 genera data}
 library(Rmisc)
@@ -67,10 +69,11 @@ gen.sum <- cbind(gen[1:5], gen.sum)
 ## Graph genera diversity
 
 ```{r summarySE pres/abs gen, graph}
-gen.sum.se <- summarySE(gen.sum, "gen.sum", c("Site", "Depth"))
+gen.sum.se <- summarySE(gen.sum, "gen.sum", c("Site", "Depth", "Year"))
 
 library(ggplot2)
-ggplot(gen.sum.se, aes(Year, gen.sum)) + geom_bar(stat = "identity") + facet_grid(Depth~Site, switch = "x") +
+ggplot(gen.sum.se, aes(Year, gen.sum)) + geom_bar(stat = "identity") + 
+   facet_grid(Depth~Site, switch = "x") +
  #  ggtitle("Present Genera - 2015, 2017") +
    geom_errorbar(aes(ymin = gen.sum-se, ymax=gen.sum+se), width = 0.2) +
    xlab("Site and Year") + ylab("Count of Genera") +
@@ -89,27 +92,6 @@ shan <- diversity(gen1, "shannon")
 shan <- round(shan,3)
 gen.shan <- cbind(gen[1:5], shan)
 head(gen.shan)
-```
-
-```{r graph shannon year, site, depth}
-shan.se <- summarySE(gen.shan, "shan", c("Year", "Site", "Depth"))
-shan.se
-
-ggplot(shan.se, aes(Site, shan)) + geom_bar(stat = "identity") + facet_grid(Depth~Year) +
-   ggtitle("Shannon's Diversity Index, 2015 and 2017") +
-   geom_errorbar(aes(ymin = shan-se, ymax=shan+se), width = 0.2)
-
-# facet by site, year side by side
-ggplot(shan.se, aes(Year, shan)) + geom_bar(stat = "identity") + facet_grid(Depth~Site, switch = "x") +
-   ggtitle("Coral Genera Diversity - 2015, 2017") +
-   geom_errorbar(aes(ymin = shan-se, ymax=shan+se), width = 0.2) +
-   theme_classic() +
-   theme(axis.ticks.x = element_blank()) +
-   labs(x = "", y = "Shannon Index") +
-   theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
-   theme(text = element_text(size = 15)) 
-   theme( strip.background= element_blank())
-
 ```
 
 ```{r shannon glm}
