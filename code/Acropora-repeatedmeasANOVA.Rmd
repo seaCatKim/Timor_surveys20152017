@@ -83,7 +83,7 @@ library(nlme)
 acr.lme <- lme(log10(tottab + .1 ) ~ Year *Site * Depth, 
                random = ~1|num_id,
                data = ACRtab, na.action = na.exclude)
-acr.lme
+#acr.lme
 summary(acr.lme)
 library(car)
 Anova(acr.lme)
@@ -128,7 +128,7 @@ qqnorm(log10(ACRbracount$totbra +0.1))
 leveneTest(totbra ~ Year * Site * Depth, data = ACRbracount)
 ```
 ```{r repeated measures anova branching}
-acrbra.lme <- lme(log10(totbra + 0.1) ~ Year +Site + Depth, 
+acrbra.lme <- lme(log10(totbra + 0.1) ~ Year * Site * Depth, 
                   random = ~1|num_id,
                data = ACRbracount, na.action = na.exclude)
 acrbra.lme
@@ -138,7 +138,7 @@ emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
 emmeans(acr.lme, list(pairwise ~ Year), adjust = "tukey")
 
 # random intercept and slope
-acrbra.lme2 <- lme(log10(totbra + 0.1) ~ Year +Site + Depth, random = ~Year|num_id,
+acrbra.lme2 <- lme(log10(totbra + 0.1) ~ Year * Site * Depth, random = ~Year|num_id,
                data = ACRbracount, na.action = na.exclude)
 acrbra.lme2
 summary(acrbra.lme2)
@@ -148,13 +148,29 @@ anova(acrbra.lme, acrbra.lme2) # models not significantly different
 ```
 
 ```{r average branching acroporids}
-# average branching acroporid per site
-ACRbraave_site <- ACRbracount %>% 
-   group_by( Site, GEN) %>% 
-   summarize(ave = mean(totbra), SE = sd(totbra)/n()) 
-ACRbraave_site
+# relevel factors 
+ACRbracount$Depth <- relevel(ACRbracount$Depth, ref = "5m")
 
-ACRbraave_yr <- ACRbracount %>% 
-   group_by( Year, GEN) %>% 
+# rename and reorder sites
+ACRbracount$Site <- ordered(ACRbracount$Site, levels = c("Rural-N", "Rural-E", "Urban-E", "Urban-W"))
+levels(ACRbracount$Site)[levels(ACRbracount$Site)=="Beloi"] <- "Rural-N"
+levels(ACRbracount$Site)[levels(ACRbracount$Site)=="Manatuto"] <- "Rural-E"
+levels(ACRbracount$Site)[levels(ACRbracount$Site)=="CristoRei"] <- "Urban-E"
+levels(ACRbracount$Site)[levels(ACRbracount$Site)=="DiliRock"] <- "Urban-W"
+
+# average branching acroporid per site, depth, year
+ACRbraave_site_d_yr <- ACRbracount %>% 
+   group_by( Site, Depth, Year, GEN) %>% 
    summarize(ave = mean(totbra), SE = sd(totbra)/n()) 
+ACRbraave_site_d_yr
+
+ggplot(ACRbracount, 
+       aes(x = Year, y = totbra, fill = Depth)) +
+   geom_boxplot() +
+   facet_wrap(vars(Site)) +
+   theme_classic()
+
+# save plot as pdf and jpg
+ggsave(here::here("figures/ACRbra_counts_site_d_yr.pdf"))
+ggsave(here::here("figures/ACRbra_counts_site_d_yr.jpg"))
 ```
