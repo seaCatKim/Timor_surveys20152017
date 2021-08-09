@@ -1,0 +1,171 @@
+---
+title: "count-dis-ACRtab"
+author: "Catherine Kim"
+date: "`r Sys.time()`"
+output: html_document
+---
+
+# Analysis of Acropora count data from coral health belt transects 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Read in coral health survey data from 2015 and 2017 and combine into one data frame
+
+```{r read in data, include=FALSE}
+library(here) # use here package for relative file path
+library(readr)
+library(dplyr)
+library(tidyverse)
+
+comp1517 <- read_csv(here::here("data/CoralHealth-2015-2017edit072020-R-genmorph.csv")) 
+
+comp1517_factor <- comp1517 %>%  mutate(across(where(is_character),as_factor))
+   
+comp1517_factor$Year <- as.factor(comp1517_factor$Year) # year also as a factor
+
+head(comp1517_factor)
+```
+
+```{r creatae unique transect id}
+comp1517_factor$long_id <- as.factor(paste(comp1517_factor$Site, comp1517_factor$Depth, comp1517_factor$Transect, sep = "_"))
+
+#write.csv(levels(comp1517_factor$id), "unique_ids.csv")
+# write levels and add num id
+# read file with num id
+ids <- read.csv(here::here("data/unique_ids_wnum.csv"))
+
+comp1517_factor <- inner_join(comp1517_factor, ids, by = 'long_id')
+comp1517_factor$num_id <- as.factor(comp1517_factor$num_id)
+```
+
+## Calculate thw count of diseased and compromised corals 
+
+```{r}
+distot <- comp1517_factor %>% 
+   group_by(Year, H1) %>% 
+   summarize(total = sum(Number))
+
+distotgen <- comp1517_factor %>% 
+   group_by(Year,GEN, morph,H1) %>% 
+   summarize(total = sum(Number))
+
+WStotgen <- comp1517_factor %>% 
+   group_by(Year,GEN, morph,H1) %>% 
+   summarize(total = sum(Number)) %>% 
+   filter(H1 == "WS")
+
+GAtotgen <- comp1517_factor %>% 
+   group_by(Year,GEN, morph,H1) %>% 
+   summarize(total = sum(Number)) %>% 
+  filter(H1 == "GA")
+```
+
+## ANOVA for count of tabulate acroporids
+
+```{r count acropora tabs}
+library(tidyr)
+library(dplyr)
+
+ACRcount <- comp1517_factor %>% 
+   group_by(Year, Site, Depth, Transect, num_id, GEN, morph) %>% 
+   summarize(tot = sum(Number)) %>% 
+   filter(morph == "tab" | morph == "corym") %>% 
+      group_by(Year, Site, Depth, Transect,num_id, GEN) %>% 
+   summarize(totmorph = sum(tot)) %>% 
+      filter(GEN == "ACR")
+
+library(ggpubr)
+ggboxplot(
+  ACRcount, x = "Site", y = "totmorph", facet.by = 'Depth',
+  color = "Year", palette = "jco"
+  )
+
+hist(ACRcount$totmorph)
+hist(log10(ACRcount$totmorph))
+qqnorm(log10(ACRcount$totmorph))
+
+acrtab.an <- aov(log10(totmorph) ~ Site * Depth * Year, data = ACRcount)
+summary(acrtab.an)
+plot(acrtab.an)
+```
+```{r repeated measures anova tabulate}
+# nomral anova
+summary(aov(log10(totmorph) ~ Year + Site + Depth + Error(num_id), data = ACRcount))
+
+# mixed model approach
+library(nlme)
+acr.lme <- lme(log10(totmorph) ~ Year +Site + Depth, random = ~1|num_id,
+               data = ACRcount, na.action = na.exclude)
+acr.lme
+summary(acr.lme)
+library(car)
+Anova(acr.lme)
+library(emmeans)
+emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
+
+#install.packages("devtools")
+devtools::install_github("easystats/easystats")
+library(easystats)
+
+#library(psycho)
+#results <- psycho::analyze(acr.lme)
+
+# random intercept and slope
+acr.lme2 <- lme(log10(totmorph) ~ Year +Site + Depth, random = ~Year|num_id,
+               data = ACRcount, na.action = na.exclude)
+acr.lme2
+summary(acr.lme2)
+Anova(acr.lme)
+emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
+
+ACRtabave <- ACRcount %>% 
+   group_by( Site, GEN) %>% 
+   summarize(ave = mean(totmorph), SE = sd(totmorph)/n()) 
+```
+
+## ANOVA for count of branching acroporids
+
+```{r count acropora branching}
+ACRbracount <- comp1517_factor %>% 
+   group_by(Year, Site, Depth, Transect, num_id, GEN, morph) %>% 
+   summarize(tot = sum(Number)) %>% 
+   filter(morph == "br" | morph == "bush" | morph == "stag") %>% 
+      group_by(Year, Site, Depth, Transect, num_id, GEN) %>% 
+   summarize(totmorph = sum(tot)) %>% 
+      filter(GEN == "ACR")
+
+ggboxplot(
+  ACRbracount, x = "Site", y = "totmorph", facet.by = 'Depth',
+  color = "Year", palette = "jco"
+  )
+
+hist(ACRbracount$totmorph)
+hist(log10(ACRbracount$totmorph))
+qqnorm(log10(ACRcount$totmorph))
+
+ACRbraave <- ACRbracount %>% 
+   group_by( Site, GEN) %>% 
+   summarize(ave = mean(totmorph), SE = sd(totmorph)/n()) 
+ACRbraave
+```
+
+```{r repeated measures anova branching}
+
+acrbra.lme <- lme(log10(totmorph) ~ Year +Site + Depth, random = ~1|num_id,
+               data = ACRbracount, na.action = na.exclude)
+acrbra.lme
+summary(acrbra.lme) # lowest AIC
+Anova(acrbra.lme)
+emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
+
+# random intercept and slope
+acrbra.lme2 <- lme(log10(totmorph) ~ Year +Site + Depth, random = ~Year|num_id,
+               data = ACRbracount, na.action = na.exclude)
+acrbra.lme2
+summary(acrbra.lme2)
+Anova(acrbra.lme)
+emmeans(acrbra.lme, list(pairwise ~ Site), adjust = "tukey")
+
+```
