@@ -1,0 +1,102 @@
+---
+title: "Combine 2015 and 2017 genera data"
+author: "CKim"
+date: "12/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analysis of coral diversity by genera
+
+```{r read in gen table data}
+library(Rmisc)
+gen15 <- read.csv("data/gentable-TL2015.csv")
+head(gen15)
+colnames(gen15)
+
+gen15$CAUL <- 0
+gen15$HERPO <- 0
+
+#combine poc
+gen15$POC <- gen15$POC + gen15$POCdamicornis
+gen15$POCdamicornis <- NULL
+
+#combine all ACRbr
+gen15$ACRbr <- gen15$ACRbot + gen15$ACRbush + gen15$ACRbushy + gen15$ACRdig + gen15$ACRstag
+gen15$ACRbot <- NULL
+gen15$ACRbush <- NULL
+gen15$ACRbushy <- NULL
+gen15$ACRdig <- NULL
+gen15$ACRstag <- NULL
+```
+
+```{r 2017 general data}
+gen17 <- read.csv("data/gentable-TL2017.csv")
+head(gen17)
+colnames(gen17)
+
+#combine HYDS
+gen17$HYD <- gen17$HYD + gen17$HYDbr + gen17$HYDenc
+gen17$HYDbr <- NULL
+gen17$HYDenc <- NULL
+
+gen17$PLE <- 0
+gen17$PORother <- 0
+gen17$TUB <- 0
+gen17$LIT <- 0
+
+#remove podo
+gen17$podo. <- NULL
+
+gen17$ACRbr <- gen17$ACRbottle + gen17$ACRbushy + gen17$ACRcorym + gen17$ACRdig + gen17$ACRstag
+gen17$ACRbottle <- NULL
+gen17$ACRbushy <- NULL
+gen17$ACRcorym <- NULL
+gen17$ACRdig <- NULL
+gen17$ACRstag <- NULL
+```
+
+```{r combine gentable sof both years}
+gen <- rbind(gen15, gen17)
+gen$Depth <- relevel(gen$Depth, ref = "5m")
+gen$Year <- as.factor(gen$Year)
+#str(gen)
+ncol(gen)
+tail(gen)
+
+colnames(gen)
+```
+
+```{r add unique id for transects}
+library(tidyr)
+library(dplyr)
+gen$long_id <- as.factor(paste(gen$Site, gen$Depth, gen$Transect, sep = "_"))
+
+#write.csv(levels(compd.t$id), "unique_ids.csv")
+# write levels and add num id
+# read file with num id
+ids <- read.csv("data/unique_ids_wnum_manatutu.csv")
+
+gen <- gen %>% 
+   inner_join( ids, by = 'long_id') %>% 
+   select(Year, Site, Depth, Transect, num_id, ACA:ACRbr)
+gen$long_id <- NULL
+```
+
+```{r add site 2 column}
+site2 <- read.csv("data/Site-Site2.csv")
+colnames(site2)[1] <- "Site"
+head(site2)
+
+gen <- full_join(gen, site2, by = "Site")
+gen$Site <- gen$Site2
+gen$Site2 <- NULL
+
+gen <- gen[-which(is.na(gen)),]
+head(gen)
+
+write.csv(gen, 'data/genmorph.csv', row.names = F)
+```

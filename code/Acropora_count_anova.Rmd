@@ -1,7 +1,7 @@
 ---
 title: "anova_acropora"
 author: "CKim"
-date: "12/14/2020"
+date: "`r sys.time()`"
 output: html_document
 ---
 
@@ -12,7 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Analyzing Acropora counts per site
 
 ```{r read in 2015 and 2017 genera data}
-gen <- read.csv('data/genmorph.csv')
+library(here)
+here()
+
+gen <- read.csv(here::here('data/genmorph.csv'))
 ```
 
 ## anova tabulate Acroporas 
@@ -28,6 +31,7 @@ summary(acrt.an)
 plot(acrt.an)
 TukeyHSD(acrt.an)
 
+library(Rmisc)
 gen.acr <- summarySE(gen, "ACRtab", c("Year", "Site", "Depth"))
 gen.acr
 ```
