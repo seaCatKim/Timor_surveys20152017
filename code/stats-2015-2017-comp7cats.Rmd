@@ -1,5 +1,5 @@
 ---
-title: "stats-2015-2017-comp7cats"
+title: "stats-2015-2017 coral health data"
 author: "CKim"
 date: "September 7, 2017"
 output: html_document
@@ -10,19 +10,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## read in transect data with comp7 cats inc ws and GAs
-# from data org rmd file
 
-```{r }
-compd.t <- read.csv('data/comp8GA_tave.csv')
+```{r read in data with growth anomaolies (GAs) separated }
+compd.t <- read.csv(here::here('data/comp8GA_tave.csv'))
 head(compd.t)
 ```
-```{r creatae unique transect id}
+```{r create unique transect id}
 compd.t$long_id <- as.factor(paste(compd.t$Site, compd.t$Depth, compd.t$Transect, sep = "_"))
 
 #write.csv(levels(compd.t$id), "unique_ids.csv")
 # write levels and add num id
 # read file with num id
-ids <- read.csv("data/unique_ids_wnum.csv")
+ids <- read.csv(here::here("data/unique_ids_wnum.csv"))
 
 library(dplyr)
 compd.t <- inner_join(compd.t, ids, by = 'long_id') # join unique transect ids
@@ -34,55 +33,34 @@ levels(compd.t$Site)
 
 head(compd.t)
 ```
-## old data
-```{r}
-# library(readr)
-# compd15.t <- read_csv("~/OneDrive/Documents/Timor-Leste/2015-2017-CoralData/2015CoralData/CoralHealth-2015-2017edit072020-R-genmorph.csv")
-# colnames(compd15.t)[colnames(compd15.t) == "dis$GA"] <- "GA"
-# colnames(compd15.t)[colnames(compd15.t) == "X"] <- "Year"
-# 
-# compd15.t$Year <- as.factor("2015")
-# head(compd15.t)
-```
 
-```{r}
-# compd17.t <- read_csv("~/OneDrive/Documents/Timor-Leste/2017Trip/R/7Percent-CompDisease-GA-TL2017-sdtrans.csv")
-# 
-# colnames(compd17.t)[colnames(compd17.t) == "dat.compall.per$GA"] <- "GA"
-# compd17.t$tot <- NULL
-# compd17.t$Site <- as.factor(compd17.t$Site)
-# levels(compd17.t$Site)[levels(compd17.t$Site) == "Manatutu"] <- "Manatuto"
-# levels(compd17.t$Site)
-# 
-# colnames(compd17.t)[colnames(compd17.t) == "X"] <- "Year"
-# 
-# compd17.t$Year <- as.factor("2017")
-# head(compd17.t)
-```
-
-```{r old data}
-# new data already dread in as compd.t
-# compd.t <- rbind(compd15.t, compd17.t)
-# compd.t$Site <- as.factor(compd.t$Site)
-# levels(compd.t$Site)[levels(compd.t$Site) == "ChristoRei"] <- "CristoRei"
-# head(compd.t)
-levels(compd.t$Site)
-
-#write.csv(compd.t, "compdis7_2015-2017.csv")
-```
 ## summary stats
 ```{r total disease ave by site and depth}
 library(Rmisc)
 library(tidyr)
 library(dplyr)
-dis <- compd.t %>% 
+
+# ave disease aross years at site and depth
+compd.t %>% 
    mutate(disease = WS + GA) %>%
    group_by(Site, Depth ) %>% 
    dplyr::summarize(dave = mean(disease),
              SE = sd(disease)/sqrt(n()))
-dis
+
 
 hist(compd.t$WS + compd.t$GA)
+
+# proportion of disease at Rural-N
+compd.t %>% 
+   dplyr::mutate(disease = WS + GA)%>% 
+   dplyr::summarize(sum(disease))
+
+compd.t %>% 
+   dplyr::mutate(disease = WS + GA)%>% 
+   filter(Site == 'Beloi') %>% 
+   dplyr::summarize(sum(disease))
+
+12.04151	/ 26.84603	
 ```
 ```{r prevalence WS and GAs by year}
 ws.ga.yr <- compd.t %>% 
@@ -99,44 +77,8 @@ ws.ga.styr <- compd.t %>%
 ws.ga.styr
 ```
 
-```{r summarize healty by site and year}
-library(Rmisc)
-
-comp.h <- summarySE(compd.t, "Healthy", c("Year", "Site", "Depth"))
-head(comp.h)
-
-comp.hyr <- summarySE(compd.t, "Healthy", c("Year", "Site"))
-head(comp.hyr)
-
-mean(compd.t$Healthy)
-sd(compd.t$Healthy)/sqrt(length(compd.t))
-
-comp.ave <- compd.t %>% 
-   group_by(Site, Year) %>%
-   summarise_all(mean)
-
-bl.ave <- summarySE(compd.t, "BL", c("Year", "Site"))
-ws.ave <- summarySE(compd.t, "WS", c("Year", "Site"))
-```
-```{r summarize ws by site and year}
-comp.ws <- summarySE(compd.t, "WS", c("Year", "Site", "Depth"))
-head(comp.ws)
-
-summarySE(compd.t, "WS", c("Site", "Depth"))
-
-ws.ys <- summarySE(compd.t, "WS", c("Year", "Site"))
-head(ws.ys)
-```
-```{r summarize ga by site and year}
-ga_yr_s_d <- summarySE(compd.t, "GA", c("Year", "Site", "Depth"))
-(ga_yr_s_d)
-
-summarySE(compd.t, "WS", c("Site", "Depth"))
-
-ws.ys <- summarySE(compd.t, "WS", c("Year", "Site"))
-head(ws.ys)
-```
-```{r ave comp health across sites and years}
+```{r ave comp health }
+# across sites, depth, and years
 compave <- compd.t %>% 
    mutate(comp = CCA + BL + AllAlgae + TL + OTH + GA) %>% 
    group_by(Site, Depth, Transect, Year) %>% 
@@ -147,17 +89,26 @@ compave <- compd.t %>%
              Se = sd(totcomp)/sqrt(n()))
 compave
 
+# across site and depth, ave across years
+compd.t %>% 
+   mutate(comp = CCA + BL + AllAlgae + TL + OTH) %>% 
+   group_by(Site, Depth) %>% 
+   dplyr::summarize(avecomp = mean(comp), SE = sd(comp)/sqrt(n()))
+
+# overall compromised health average
 mean(compave$cave)
 sd(compave$cave)/sqrt(length(compave))
 ```
 ```{r ave disease and comp health by site year}
 cd <- compd.t %>% 
-   mutate(compd = CCA + BL + AllAlgae + TL + OTH + GA + WS) %>% 
+   dplyr::mutate(compd = CCA + BL + AllAlgae + TL + OTH + GA + WS) %>% 
    group_by(Site,Year) %>% 
-   summarize(avecd = mean(compd),
+   dplyr::summarize(avecd = mean(compd),
              SE = sd(compd)/sqrt(n()))
 cd
 ```
+
+
 ```{r ave all algae growth per site}
 alg <- compd.t %>% 
    group_by(Site, Year) %>% 
@@ -175,65 +126,6 @@ hist(sqrt(compd.tl$Percent))
 ```
 
 
-
-## permanova ----
-# repeated measures in PRIMER used
-```{r betadisper}
-library(vegan)
-## betadisper ----
-trans.all <- (sqrt(compd.t[5:ncol(compd.t)]))
-
-#trans.all$DUM <- 1  don't need
-head(trans.all)
-tdc.dist <- vegdist(trans.all)
-head(tdc.dist)
-
-dc.yr<- betadisper(tdc.dist, compd.t$Year, type = "centroid")
-dc.yr
-plot(dc.yr)
-boxplot(dc.yr)
-anova(dc.yr)
-permutest(dc.yr)
-TukeyHSD(dc.yr)
-
-dcdat.dis2<- betadisper(tdc.dist, compd.t$Site, type = "centroid")
-dcdat.dis2
-plot(dcdat.dis2)
-boxplot(dcdat.dis2)
-anova(dcdat.dis2)   # significant
-permutest(dcdat.dis2) # significant
-TukeyHSD(dcdat.dis2)  # Mand and Dili and Beli, Dili, Cristo
-
-dcdat.dis3<- betadisper(tdc.dist, compd.t$Depth, type = "centroid")
-dcdat.dis3
-plot(dcdat.dis3)
-boxplot(dcdat.dis3)
-anova(dcdat.dis3)  # significant
-permutest(dcdat.dis3) # Significnt
-TukeyHSD(dcdat.dis3) #
-```
-
-
-```{r per}
-## adonis ----
-perm <- adonis(tdc.dist ~ Year*Site*Depth, permutations = 9999, data = compd.t[,1:4])
-perm
-```
-## manova ---
-
-```{r transofrm comp data}
-trans.comp <- select(compd.t, Year, Site, Depth, num_id)
-trans.comp$Year <- compd.t$Year
-trans.comp$BL <- sqrt(compd.t$BL)
-trans.comp$AllAlgae <- compd.t$AllAlgae
-trans.comp$OTH <- sqrt(compd.t$OTH)
-trans.comp$TL <- sqrt(compd.t$TL)
-trans.comp$CCA <-   sqrt(compd.t$CCA)
-str(trans.comp)
-
-comp.man <- manova(cbind(BL, AllAlgae, OTH, TL, CCA) ~ Year*Site*Depth, trans.comp)
-summary(comp.man)
-```
 ## anovas ----
 ```{r bleaching hist and plot}
 hist(compd.t$BL)
@@ -246,12 +138,6 @@ qqnorm(sqrt(compd.t$BL))
 
 leveneTest((BL)~Year*Site*Depth, compd.t)
 leveneTest((BL)~Year*Site*Depth, trans.comp) # not significant
-bl.anE <- aov(sqrt(BL)~Site*Depth + Error(Year), trans.comp)
-summary(bl.anE)
-
-bl.an <- aov((BL)~Year*Site*Depth, trans.comp)
-summary(bl.an)
-TukeyHSD(bl.an)
 ```
 ```{r bleaching summary stats and plot}
 bl.se <- summarySE(compd.t, "BL", c("Year", "Site", 'Depth'))
@@ -264,111 +150,6 @@ ggboxplot(
   color = "Year", palette = "jco"
   )
 ```
-```{r bleaching limer repeated anova}
-library(nlme)
-bl.lme <- lme(sqrt(BL) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t,
-              na.action = na.exclude)
-bl.lme
-summary(bl.lme)
-library(car)
-Anova(bl.lme) # year:site:depth interaction
-library(emmeans)
-bl.tuk <- emmeans(bl.lme, list(pairwise ~ Year:Site:Depth), adjust = "tukey")
-bl.tukpair <- as.data.frame(bl.tuk$`pairwise differences of Year, Site, Depth`)
-
-bl.tukpair[which(bl.tukpair$p.value < 0.05),]
-```
-```{r anova algae overgrowth}
-hist(compd.t$AllAlgae + compd.t$CCA)
-qqnorm(compd.t$AllAlgae + compd.t$CCA)
-qqnorm(compd.t$AllAlgae)
-leveneTest((AllAlgae)~Year*Site*Depth, trans.comp)
-aa.an <- aov(AllAlgae~Year*Site*Depth, trans.comp)
-summary(aa.an)
-TukeyHSD(aa.an)
-
-ggboxplot(
-  data = compd.t, x = "Site", y = "AllAlgae", 
-  color = "Year", palette = "jco"
-  )
-
-aa.se <- summarySE(compd.t, "AllAlgae", c("Year", "Site"))
-aa.se
-```
-```{r algae lmer repeated anova}
-aa.lme <- lme((AllAlgae) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t, na.action = na.exclude)
-aa.lme
-summary(aa.lme)
-Anova(aa.lme)  # Year:site interaction
-emmeans(aa.lme, list(pairwise ~ Year:Site), adjust = "tukey")
-```
-## CCA anovas
-```{r CCCA}
-hist(compd.t$CCA)
-
-compd.t$slogCCA <- log10((compd.t$CCA * (N-1) + .5)/N)
-
-hist((compd.t$slogCCA))
-#qqnorm(log10(compd.t$CCA+1))
-
-qqnorm(sqrt(compd.t$CCA))
-leveneTest(sqrt(CCA)~Year*Site*Depth, trans.comp) # not significant
-cca.an <- aov(sqrt(CCA)~Year*Site*Depth, trans.comp)
-summary(cca.an)
-TukeyHSD(cca.an)
-
-cca.se <- summarySE(compd.t, "CCA", c("Year", "Site"))
-
-ggboxplot(
-  data = compd.t, x = "Site", y = "CCA", facet.by = 'Depth',
-  color = "Year", palette = "jco"
-  )
-```
-
-```{r CCA lmer repeatd anova}
-cca.lme <- lme((CCA) ~ Year * Site*Depth, random = ~1|num_id, data = trans.comp,
-             na.action = na.exclude)
-cca.lme
-summary(cca.lme)
-Anova(cca.lme)  # sig year:site, site:depth interactions
-emmeans(cca.lme, list(pairwise ~ Year:Site), adjust = "tukey")
-emmeans(cca.lme, list(pairwise ~ Site:Depth), adjust = "tukey")
-```
-
-## other not included
-```{r anova other compromised health}
-hist(sqrt(compd.t$OTH))
-qqnorm(sqrt(compd.t$OTH))
-leveneTest(sqrt(OTH)~Year*Site*Depth, trans.comp)
-oth.an <- aov(sqrt(OTH)~Year*Site*Depth, trans.comp)
-summary(oth.an)
-TukeyHSD(oth.an)
-```
-```{r anova tissue loss}
-hist(compd.t$TL)
-#hist(log10(compd.t$TL+1))
-hist(sqrt(compd.t$TL))
-qqnorm(sqrt(compd.t$TL))
-leveneTest((TL)~Year*Site*Depth, trans.comp) # not sig
-
-TL.an <- aov(sqrt(TL)~Year*Site*Depth, trans.comp)
-summary(TL.an)
-
-ggboxplot(
-  data = compd.t, x = "Site", y = "TL", facet.by = 'Depth',
-  color = "Year", palette = "jco"
-  )
-```
-```{r TL lmer repeated anova}
-tl.lme <- lme((TL) ~ Year * Site*Depth, random = ~1|num_id, data = trans.comp,
-             na.action = na.exclude)
-tl.lme
-summary(tl.lme)
-Anova(tl.lme)  # sig year
-emmeans(tl.lme, list(pairwise ~ Year), adjust = "tukey")
-```
-
-
 
 # Healthy stats
 ```{r healthy hist plot}
@@ -385,56 +166,34 @@ h.lme <- lme((Healthy) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t,
              na.action = na.exclude)
 h.lme
 summary(h.lme)
-Anova(h.lme)  # year:site, year:depth
-emmeans(h.lme, list(pairwise ~ Year:Site), adjust = "tukey")
-emmeans(h.lme, list(pairwise ~ Year:Depth), adjust = "tukey")
+Anova(h.lme)  
+emmeans(h.lme, list(pairwise ~ Year), adjust = "tukey")
+emmeans(h.lme, list(pairwise ~ Site), adjust = "tukey")
+emmeans(h.lme, list(pairwise ~ Depth), adjust = "tukey")
 
 ```
+```{r summarize healthy by site and year}
+library(Rmisc)
 
-# WS stats ----
-# repeated measures Anova not included in thesis
-```{r}
-hist(compd.t$WS)
-qqnorm(compd.t$WS)
-shapiro.test(compd.t$WS)
+comp.h <- summarySE(compd.t, "Healthy", c("Year", "Site", "Depth"))
+head(comp.h)
 
-library(ggpubr)
-ggboxplot(
-  compd.t, x = "Site", y = "WS", facet.by = 'Depth',
-  color = "Year", palette = "jco"
-  )
+comp.hs <- summarySE(compd.t, "Healthy", c("Site"))
+head(comp.hs)
 
-N <- nrow(compd.t)
-compd.t$slogWS <- log10((compd.t$WS * (N-1) + .5)/N)
-hist(compd.t$slogWS)
-qqnorm(log10(compd.t$WS))
-qqline(log10(compd.t$WS))
-shapiro.test(compd.t$slogWS)
+comp.hd <- summarySE(compd.t, "Healthy", c("Depth"))
+head(comp.hd)
 
-# anova with aov
-ws.an <- aov(WS~Year*Site*Depth, data = compd.t)
-summary(ws.an)
-plot(ws.an)
+comp.hyr <- summarySE(compd.t, "Healthy", c("Year"))
+head(comp.hyr)
 
-ws.an2 <- aov(slogWS~Year*Site*Depth, data = compd.t)
-summary(ws.an)
-plot(ws.an)
+mean(compd.t$Healthy)
+sd(compd.t$Healthy)/sqrt(length(compd.t))
+
+comp.ave <- compd.t %>% 
+   group_by(Site, Year) %>%
+   summarise_all(mean)
+
+bl.ave <- summarySE(compd.t, "BL", c("Year", "Site"))
+ws.ave <- summarySE(compd.t, "WS", c("Year", "Site"))
 ```
-```{r lmer repeated anova of WS}
-ws.lme <- lme(WS ~ Year * Site * Depth, random = ~1|num_id, data = compd.t,
-              na.action = na.exclude)
-ws.lme
-summary(ws.lme) # lowest AIC
-Anova(ws.lme)
-emmeans(ws.lme, list(pairwise ~ Site), adjust = "tukey")
-
-# lmer with slog
-logws.lme <- lme(slogWS ~ Year * Site * Depth, random = ~1|num_id, data = compd.t,
-              na.action = na.exclude)
-logws.lme
-summary(logws.lme) # lowest AIC
-Anova(logws.lme)
-emmeans(logws.lme, list(pairwise ~ Site), adjust = "tukey")
-
-```
-

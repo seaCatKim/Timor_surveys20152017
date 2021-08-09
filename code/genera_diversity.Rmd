@@ -1,7 +1,7 @@
 ---
 title: "genera diversity"
-author: "CKim"
-date: "12/14/2020"
+author: "Catherine Kim"
+date: "April 23, 2021"
 output: html_document
 ---
 
@@ -12,11 +12,33 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Genera diversity analysis of coral belt transects 
 
 ```{r read in 2015 and 2017 genera data}
-gen <- read.csv('data/genmorph.csv')
-
-gen$Year <- as.factor(gen$Year)
-gen$Depth <- relevel(gen$Depth, ref = "5m")
+library(Rmisc)
+library(here)
+library(dplyr)
+gen <- read.csv(here::here('data/genmorph.csv')) %>% 
+   dplyr::mutate(across(where(is.character), as.factor))
+   
+gen$Year <- as.factor(gen$Year)  # year also as a factor
+gen$Depth <- relevel(gen$Depth, ref = "5m")  # relevel so depth goes 5 then 10 m
 ```
+
+```{r average number of corals per site and depth}
+totcoral <- gen %>% 
+   dplyr::select(ACA:PORmass) %>% 
+   rowSums()
+
+avecoral <- cbind(gen[,1:5], totcoral) %>% 
+   group_by(Site, Depth, Year) %>% 
+   dplyr::summarise(total = sum(totcoral))%>%
+   group_by(Site, Depth) %>% 
+   dplyr::summarise(ave = mean(total), SE = sd(total)/sqrt(n()))
+
+# col per m/2
+density <- avecoral$ave/60 
+cbind(avecoral[,1:2], density)
+   
+```
+
 
 ```{r presence/absence total gen graph}
 gen1 <- gen[which(colnames(gen) == 'ACA'):ncol(gen)]
@@ -45,76 +67,24 @@ gen.sum <- cbind(gen[1:5], gen.sum)
 ## Graph genera diversity
 
 ```{r summarySE pres/abs gen, graph}
-gen.sum.se <- summarySE(gen.sum, "gen.sum", c("Year", "Site", "Depth"))
+gen.sum.se <- summarySE(gen.sum, "gen.sum", c("Site", "Depth"))
 
 library(ggplot2)
 ggplot(gen.sum.se, aes(Year, gen.sum)) + geom_bar(stat = "identity") + facet_grid(Depth~Site, switch = "x") +
  #  ggtitle("Present Genera - 2015, 2017") +
    geom_errorbar(aes(ymin = gen.sum-se, ymax=gen.sum+se), width = 0.2) +
-   xlab("Site, Year") + ylab("Count of Genera") +
+   xlab("Site and Year") + ylab("Count of Genera") +
    theme_classic() +
       theme(axis.ticks.x = element_blank()) +
    theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
    theme(text = element_text(size = 15)) 
    theme( strip.background= element_blank())
-ggsave("figures/genera_2015-2017.pdf", height = 5, width = 7)
+#ggsave("figures/genera_2015-2017.pdf", height = 5, width = 7)
 ```
 
-```{r anova pres/abs genera - repeated measures}
-hist(gen.sum$gen.sum)
-hist(sqrt(gen.sum$gen.sum)) # no transform
-
-library(car)
-leveneTest(gen.sum~factor(Year)*Site*Depth, data = gen.sum) # not significant
-leveneTest(sqrt(gen.sum)~factor(Year)*Site*Depth, data = gen.sum)
-
-gen.an <- aov(sqrt(gen.sum)~Year*Site*Depth, data = gen.sum)
-summary(gen.an)
-plot(gen.an)
-
-## use this one
-gen.anE <- aov((gen.sum)~ Year * Site*Depth + Error(num_id), data = gen.sum)
-summary(gen.anE)
-plot(gen.anE)
-
-#transofmr not necesary
-sqgen.anE <- aov(sqrt(gen.sum)~Site*Depth + Error(Year), data = gen.sum)
-summary(sqgen.anE)
-
-## not significant?
-library(nlme)
-library(multcomp)
-# gen.sum$SiteD <- interaction(gen.sum$Site, gen.sum$Depth)
-# gen.lme <- lme(sqrt(gen.sum) ~ SiteD, random = ~1|Year, data = gen.sum)
-# summary(gen.lme)
-# summary(glht(gen.lme, linfct=mcp(SiteD = "Tukey")), test = adjusted(type = "bonferroni"))
-
-gen.lme2 <- lme((gen.sum) ~ Year*Site*Depth, random = ~1|num_id, data = gen.sum, na.action = na.exclude)
-gen.lme2
-summary(gen.lme2)
-Anova(gen.lme2)
-library(emmeans)
-emmeans(gen.lme2, list(pairwise ~ Site:Depth), adjust = "tukey")
-```
-
-```{r summarySE pres/abs site and depth gen, graph}
-sum.sited <- summarySE(gen.sum, "gen.sum", c("Site", "Depth"))
-sum.sited
-library(ggplot2)
-ggplot(sum.sited, aes(Site, gen.sum)) + geom_bar(stat = "identity") + facet_grid(Depth~.) +
-   ggtitle("Present Genera - 2015, 2017") +
-   geom_errorbar(aes(ymin = gen.sum-se, ymax=gen.sum+se), width = 0.2) +
-   xlab("Site, Year") + ylab("Count of Genera") +
-   theme_classic() +
-      theme(axis.ticks.x = element_blank()) +
-   theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
-   theme(text = element_text(size = 15)) 
-   theme( strip.background= element_blank())
-
-```
 # Shannon's diversity on genera
-
 ```{r calculate shannon index}
+library(vegan)
 shan <- diversity(gen1, "shannon")
 shan <- round(shan,3)
 gen.shan <- cbind(gen[1:5], shan)
@@ -147,28 +117,16 @@ shan.glm <- lm(shan~Year*Site*Depth, data = gen.shan)
 summary(shan.glm)
 plot(shan.glm)
 ```
-
-```{r anova Shannon}
+```{r check normality of shannon diversity}
 hist(gen.shan$shan)
 hist(sqrt(gen.shan$shan))
-hist(log10(gen.shan$shan))
-
-shapiro.test(gen.shan$shan)
-shapiro.test(sqrt(gen.shan$shan))
-shapiro.test(log10(gen.shan$shan))
 
 library(car)
 leveneTest(shan~Year*Site*Depth, data = gen.shan) # not significant
 leveneTest(sqrt(shan)~Year*Site*Depth, data = gen.shan) # not significant
+```
 
-shan.an <- aov(sqrt(shan)~Year*Site*Depth, data = gen.shan)
-summary(shan.an)
-plot(shan.an)
-TukeyHSD(shan.an)
-
-shan.anE <- aov(sqrt(shan)~ Year * Site*Depth+Error(num_id), data = gen.shan)
-summary(shan.anE)
-
+```{r anova Shannon}
 library(nlme)
 shan.lme2 <- lme(sqrt(shan) ~ Year * Site*Depth, random = ~1|num_id, data = gen.sum, na.action = na.exclude)
 plot(shan.lme2)
