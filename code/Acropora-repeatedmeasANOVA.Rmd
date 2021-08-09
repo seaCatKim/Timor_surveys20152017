@@ -9,8 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Read in coral health survey data from 2015 and 2017 and combine into one data frame
+
 ```{r read in data, include=FALSE}
-library(here)
+library(here) # to use relative file paths to read in data
 library(readr)
 comp1517 <- read_csv(here::here("data/CoralHealth-2015-2017edit042021-R-genmorph.csv")) 
 
@@ -21,6 +23,7 @@ comp1517_factor$Year <- as.factor(comp1517_factor$Year) # year also as a factor
 
 head(comp1517_factor)
 ```
+
 ```{r create unique transect id}
 comp1517_factor$long_id <- as.factor(paste(comp1517_factor$Site,
                                            comp1517_factor$Depth,
@@ -35,7 +38,9 @@ library(dplyr)
 comp1517_factor <- inner_join(comp1517_factor, ids, by = 'long_id')
 comp1517_factor$num_id <- as.factor(comp1517_factor$num_id)
 ```
-# Tabulate acroporid count and analysis
+
+## Tabulate acroporid count and analysis
+
 ```{r count acropora tabulate colonies}
 library(tidyr)
 library(dplyr)
@@ -104,6 +109,7 @@ ACRtabave
 ```
 
 # Branching acroporid count and analysis
+
 ```{r count acropora branching}
 ACRbracount <- ACRcount %>% 
    filter(morph == "br" | morph == "bush" | morph == "stag") %>% 
@@ -146,7 +152,7 @@ anova(acrbra.lme, acrbra.lme2) # models not significantly different
 ACRbraave_site <- ACRbracount %>% 
    group_by( Site, GEN) %>% 
    summarize(ave = mean(totbra), SE = sd(totbra)/n()) 
-ACRbraave
+ACRbraave_site
 
 ACRbraave_yr <- ACRbracount %>% 
    group_by( Year, GEN) %>% 
