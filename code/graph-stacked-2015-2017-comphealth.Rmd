@@ -1,5 +1,5 @@
 ---
-title: "Disease and compromised heatlh 2015-2017"
+title: "Disease and compromised heatlh 2015-2017 graph"
 author: "Catherine Kim"
 date: "April 23, 2021"
 output: pdf_document
@@ -30,16 +30,8 @@ head(compdat)
 compdat <- compdat[-which(is.na(compdat)),]
 ```
 
-```{r ave compromised total}
-compdat %>% 
-   group_by(Year, Site2, Depth, Transect) %>% 
-   filter(Status != 'Healthy')%>% 
-   dplyr::summarize(comp_transt = sum(Percent))%>% 
-   ungroup() %>% 
-   dplyr::summarize(avecomp = mean(comp_transt), SE = sd(comp_transt)/sqrt(n()))
-```
+## average comprimese states by site, depth, year
 
-# average comprimese states by site, depth, year
 ```{r average group by year, site, depth}
 compall <- compdat %>% 
    group_by(Year, Site2, Depth, Status) %>% 
@@ -47,7 +39,7 @@ compall <- compdat %>%
                                   SE = sd(Percent)/sqrt(n()))
 compall
 ```
-# stacked graph without depth facet
+## stacked graph without depth facet
 
 ```{r groupby year and site}
 compall_nodepth <- compdat %>% 
