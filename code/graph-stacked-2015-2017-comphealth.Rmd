@@ -47,13 +47,6 @@ compall <- compdat %>%
                                   SE = sd(Percent)/sqrt(n()))
 compall
 ```
-```{r mean of healthy coral }
-library(Rmisc)
-healthy.aveyr <- compall %>% filter(Status == "Healthy") %>%
-   summarySE("avePer")
-healthy.aveyr
-```
-
 # stacked graph without depth facet
 
 ```{r groupby year and site}
