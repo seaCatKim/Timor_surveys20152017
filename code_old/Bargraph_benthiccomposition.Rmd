@@ -1,0 +1,159 @@
+---
+title: "Benthic_graph"
+author: "CKim"
+date: "12/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## TL 2017 Survey - LIT w turf
+## graph to compare to 2015
+
+From code in C:\Users\jk845\OneDrive\Documents\Timor-Leste\2017Trip\R\Bargraph_BenthiComp-TL-2015-2017
+
+```{r read in data}
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(Rmisc)
+library(ggplot2)
+library(reshape2)
+library(here)
+
+tur <- read.csv(here::here("data/LIT-master-2017-turf.csv"))
+head(tur)
+
+tur.ben <- tur %>%
+   group_by(Site, Depth, Transect, Major.Category) %>%
+   dplyr::summarise(totcat = sum(Area))%>%
+   spread(Major.Category,totcat)
+tur.ben[is.na(tur.ben)] <- 0
+head(tur.ben)
+
+tur.ben$tot <- apply(tur.ben[,4:ncol(tur.ben)], 1, sum)
+tur.ben$tot
+
+w <- rep(1, each = 24)
+for( i in c(4:ncol(tur.ben))){
+   x <- tur.ben[,i]/tur.ben$tot*100
+   w <- cbind(w, x)
+}
+head(w)
+
+tur.ben <- as.data.frame(tur.ben)
+head(tur.ben)
+ben.p <- cbind(tur.ben[,1:3], w[,2:ncol(w)])
+head(ben.p)
+colnames(ben.p) <- colnames(tur.ben)
+
+ben.p$HardCoral <- ben.p$Coral + ben.p$FreeCoral
+ben.p$Coral <- NULL
+ben.p$FreeCoral <- NULL
+ben.p$'Substrate/Sand' <- ben.p$LooseSub + ben.p$Substrate + 
+   ben.p$Rubble + ben.p$Sand
+ben.p$LooseSub <- NULL
+ben.p$Substrate <- NULL
+ben.p$Rubble <- NULL
+ben.p$Sand <- NULL
+
+ben.p$tot <- apply(ben.p[,4:10], 1, sum)
+ben.p$tot
+ben.p$tot <- NULL
+
+Site2 <- rep(c("Rural-N", "Urban-E", "Urban-W", "Rural-E"), each = 6)
+ben.p$Site2 <- Site2
+
+ben.p$Year <- "2017"
+
+###
+#write.csv(ben.p, "TL2017-benthiccomp-transect.csv")
+###
+```
+```{r rural vs urban cover}
+urban <- data.frame(Site = c("Beloi", 'Manatutu', 'CristoRei', 'DiliRock'), 
+                    RU = c("Rural", "Rural", "Urban", "Urban"))
+urban
+
+ben.ur <- inner_join(ben.p, urban, by = 'Site')
+tail(ben.ur)
+````
+```{r graph benthic composition}
+benur.se <- summarySE(ben.ur, 'HardCoral', 'RU' )
+benur.se
+
+### graph benthic composition ----
+ben.p.l <- ben.p %>%
+   melt(id.vars = c("Site", "Site2", "Depth", "Transect", "Year"))
+head(ben.p.l)
+
+ben.per.se <- summarySE(ben.p.l, "value", c("Site", "Site2","Depth", "variable", "Year"))
+head(ben.per.se)
+```
+```{r read in 2015 data}
+## comparine 2015 and 2017...
+ben15 <- read.csv(here::here("data/BenComp-ave-se-TL2015.csv"))
+ben15$X <- NULL
+ben15$Pop <- NULL
+ben15$sd.sd <- NULL
+ben15$upper <- NULL
+ben15$lower <- NULL
+
+ben15$year <- "2015"
+ben15$Site.Year <- paste(ben15$Site2, ben15$year, sep="-")
+head(ben15)
+
+levels(ben15$Major.Category)
+ben15$Major.Category <- revalue(ben15$Major.Category, c("pCCA" = "CCA", "pCoral" = "HardCoral", "pInv" = "Invert",
+                                "pMA" = "Macroalgae", "pSoft" = "SoftCoral", "pSubSa" = "Substrate/Sand",
+                                "pTurCy" = "Turf"))
+
+
+ben17 <- ben.per.se
+ben17$N <- NULL
+ben17$ci <- NULL
+ben17$sd <- NULL
+ben17$Year <- NULL
+
+ben17$year <- 2017
+
+colnames(ben17)[colnames(ben17)=="variable"] <- "Major.Category"
+colnames(ben17)[colnames(ben17)=="value"] <- "ave"
+
+ben17$Site.Year <- paste(ben17$Site2, ben17$year, sep="-")
+head(ben17)
+
+ben.2yr <- rbind(ben15, ben17) %>%  dplyr::mutate(ben.2yr, across(where(is.character), as.factor))
+
+head(ben.2yr)
+nrow(ben.2yr)
+ben.2yr$Depth <- relevel(ben.2yr$Depth, ref = "5m")
+
+## check add to 100
+ben.check <- ben.2yr
+```
+
+```{r stacked bar graph of 2015 and 2017}
+levels(ben.2yr$Major.Category)
+ben.2yr$Major.Category <- relevel(ben.2yr$Major.Category, ref = "HardCoral")
+head(ben.2yr)
+
+o <- ben.2yr[order(ben.2yr$Major.Category, decreasing = T),]
+
+ggplot(ben.2yr, aes(x=year,y = ave, fill= factor(Major.Category,
+                                        levels = c("Turf", "Substrate/Sand", "SoftCoral",
+                                                   "Macroalgae", "Invert", "CCA",
+                                                   "HardCoral")))) + 
+   geom_bar( position="stack", stat="identity") +   facet_grid(Depth~Site2,
+            switch = "x") +
+   labs(title = "Benthic Composition", x = "Site and Year", y = "Percent") +
+      theme_classic()+
+   #theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+         panel.background = element_blank(),
+         text = element_text(size = 16)) +
+   scale_fill_discrete(name="Benthic Category")
+```
+
