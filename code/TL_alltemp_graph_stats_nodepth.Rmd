@@ -9,14 +9,14 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library(here)
 ```
 
-## Current paper results
-
 ## Timor-Leste in situ and satellite temperature data from Nov 2015 to Jul 2017
+
 Monthly average of daily maximum temperature
 ```{r combine  sites 5 and 10 m depth montly mean from daily max, crw data}
-temp <- read_csv("data/alltemp_TL.csv") %>% 
+temp <- read_csv(here::here("data/alltemp_TL.csv")) %>% 
    mutate_if(is.character, as.factor)
 head(temp)
 
@@ -30,6 +30,7 @@ temp$Depth <- relevel(temp$Depth, ref = '5m')
 levels(temp$m.y)
 temp$m.y = factor(temp$m.y,levels(temp$m.y)[c(21,24,3,5,7,1,9,11,13,15,17,19,22,25,4,6,8,2,10,12,14,16,18,20,23)])
 ```
+
 ```{r boxplot monthly temp ave by site}
 ggplot(temp, aes(x = Site, y = Temp, fill = year)) +
    facet_grid(Depth~.)+
@@ -37,9 +38,11 @@ ggplot(temp, aes(x = Site, y = Temp, fill = year)) +
    geom_point(aes(color = year), position = position_jitter(0.21)) +
     theme_classic()
 ```
+
 Incorrect SE values for ANOVA stats - using the SE values from calculating the monthly averages
 No replication at site/depth, only one logger per site/depth and only one satellite 
 satellite data is repeated per depth
+
 ```{r line graph all sites by month/yr}
 cbPalette <- c("#D55E00", "#56B4E9", "#009E73",  "#CC79A7")
 
@@ -54,59 +57,77 @@ ggplot(temp, aes(m.y, Temp, group = Site, color = Site)) + facet_grid(Depth~.) +
    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
       geom_hline(yintercept = 29.5, color = "light blue", linetype = 2) +
    geom_hline(yintercept = 30.5, color = "light blue") 
-ggsave('figures/line_TLtemp.pdf', width = 7, height = 4)
+ggsave(here::here('figures/line_TLtemp.pdf'), width = 7, height = 4)
 ```
+
 Assigning the austral season to each month 1-3 = summer etc.
+
 ```{r filter overlapping Crw and c data, add season, add method}
 season <- data.frame(month = 1:12, season = rep(c("summer", "fall", "winter", "spring"), each = 3))
 season$month <- as.factor(season$month)
 season
 
-method <- data.frame(Site = c("Rural-N", "Urban-E", "Urban-W", "CRW"), Method = c("insitu", "insitu", "insitu", "sat"))
+method <- data.frame(Site = c("Rural-N", "Urban-E", "Urban-W", "CRWTL"), Method = c("insitu", "insitu", "insitu", "sat"))
 method
 
 # subset out data with both CRW and logger temperature data
-temp.same <- temp %>% filter(m.y != "8/2015" & m.y != "9/2015" & m.y != "10/2015" & m.y != "11/2015" & 
-                                m.y != "6/2017" & m.y != "7/2017" & m.y != "8/2017") %>% 
+temp.same <- temp %>% filter(m.y != "8/2015" & m.y != "9/2015" & m.y != "10/2015" & m.y != "11/2015" & m.y != "6/2017" & m.y != "7/2017" & m.y != "8/2017") %>% 
   inner_join(season, by = 'month') %>% 
-   inner_join(method, by = 'Site')
+   inner_join(method, by = 'Site') %>% 
+   mutate_if(is.character, as.factor)
 
 # remove CRW for one depth used for plot
-temp.same <- temp.same[-which(temp.same$Site == 'CRW' & temp.same$Depth == '10m'),] #
+temp.same <- temp.same[-which(temp.same$Site == 'CRWTL' & temp.same$Depth == '10m'),] #
 
 # relevel method so sat is reference
 temp.same$Method <- relevel(temp.same$Method, ref = "sat")
 
 head(temp.same)
+
+crw <- temp.same %>% 
+   filter( Method == "sat") %>% 
+   select(Site, m.y, Temp, sd, se)
+colnames(crw) <- c("Site", "m.y", "siteave", "SD", "SE")
+crw
+
 ```
 
 ## Graph without facet by depth
 average the 2 loggers per site
-1 satellitepoint per month
+1 satellite point per month
 
 ```{r ave temp loggers by site}
 temp.avelog <- temp.same %>% 
+   filter(Method != "sat") %>% 
    group_by(Site, m.y) %>% 
-   summarise(siteave = mean(Temp), SD = sd(Temp), SE = SD/sqrt(n()), N = n())
+   summarise(siteave = mean(Temp), SD = sd(Temp), SE = SD/sqrt(n())) #, N = n())
 
 temp.avelog
+
+alltemp <- rbind(temp.avelog, crw)
+alltemp
 ```
 
 ```{r line graph all sites by month/yr no depth facet}
+start <-  c("11/2015", "11/2016")
+end <-  c("5/2016", "5/2017")
 
-ggplot(temp.avelog, aes(m.y, siteave, group = Site, color = Site)) + 
-   geom_ribbon(aes(ymax= siteave+(SE), ymin= siteave-(SE), fill = Site), alpha = 0.4) +
+ggplot(alltemp, mapping= aes(m.y, siteave, group = Site, color = Site)) +
    geom_line()+
+   geom_ribbon(aes(m.y, siteave, ymax= siteave+(SE), ymin= siteave-(SE), fill = Site),
+               alpha = 0.4) + 
    scale_color_manual( values = cbPalette) +
    scale_fill_manual(values = cbPalette) +
    theme_classic() +
-   ggtitle("Coral Reef Watch - In Situ Temperature Monthly Mean + SE") +
+ #  ggtitle("Coral Reef Watch - In Situ Temperature Monthly Mean + SE") +
    xlab("Month/Year") + ylab("Temperature [C]") +
    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
       geom_hline(yintercept = 29.5, color = "light blue", linetype = 2) +
-   geom_hline(yintercept = 30.5, color = "light blue") 
+   geom_hline(yintercept = 30.5, color = "light blue")  
+  
 #ggsave('figures/line_TLtemp.pdf', width = 7, height = 4)
 ```
+
 ## Statistics
 
 ```{r histograph Temp, anova}
@@ -158,7 +179,7 @@ boxplot(Temp~season, data = temp.same)
 boxplot(Temp~Method:season, data = temp.same, las = 2)
 ```
 
-ANOVA with type III sums of sqs folloing https://www.r-bloggers.com/2011/03/anova-%E2%80%93-type-iiiiii-ss-explained/
+ANOVA with type III sums of sqs following https://www.r-bloggers.com/2011/03/anova-%E2%80%93-type-iiiiii-ss-explained/
 ```{r Type III SS method by season anova}
 method.lm <- lm(Temp~Method*season, data = temp.same, contrasts = list(Method = contr.sum, season = contr.sum))
 Anova(method.lm, type = 'III')
@@ -171,12 +192,14 @@ boxplot(Temp~Method, data = temp.same)
 boxplot(Temp~season, data = temp.same)
 boxplot(Temp~Method:season, data = temp.same, las = 2)
 ```
-```{r box plot showing method:season interaction}
+
+```{r box plot showing season }
 ggplot(temp.same, aes(season, Temp)) + 
    geom_jitter(aes(color = Method)) +
    geom_boxplot(fill = NA) + 
    theme_classic()
 ```
+
 ```{r ave temp by CRW and all loggers together}
 temp.same %>% 
    group_by(Method, season) %>% 
@@ -184,13 +207,14 @@ temp.same %>%
 ```
 
 ## Statistics testing site/depth differences between logger data
+
 ```{r}
 logger <- filter(temp.same, temp.same$Method != 'sat') %>% droplevels()
 head(logger)
 ```
 
 ```{r Anova on logger temperature differences between site, depth, month/year}
-log.lm <- lm(Temp~Site*Depth + factor(month)/factor(year), data = logger)
+log.lm <- lm(Temp ~ Site * Depth + factor(month)/factor(year), data = logger)
 Anova(log.lm)
 plot(log.lm)
 
@@ -204,8 +228,9 @@ boxplot(Temp~month, data = logger)
 logger$Ym <- interaction(logger$year, logger$month)
 boxplot(Temp~Ym, data = logger, las = 2)
 ```
+
 ```{r Anova on logger temperature differences between site, month/year}
-log.lm.nodepth <- lm(Temp~Site + factor(month)/factor(year), data = logger)
+log.lm.nodepth <- lm(Temp ~ Site + factor(month)/factor(year), data = logger)
 Anova(log.lm.nodepth)
 plot(log.lm.nodepth)
 
