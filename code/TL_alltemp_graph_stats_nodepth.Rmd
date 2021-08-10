@@ -8,6 +8,8 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+Sys.setenv(R_GSCMD = "C:/Program Files/gs/gs9.54.0/bin/gswin64c.exe")
+
 library(tidyverse)
 library(here)
 ```
@@ -84,8 +86,8 @@ temp.same$Method <- relevel(temp.same$Method, ref = "sat")
 
 head(temp.same)
 
-crw <- temp.same %>% 
-   filter( Method == "sat") %>% 
+crw <- temp %>% 
+   filter( Site == "CRWTL") %>% 
    select(Site, m.y, Temp, sd, se)
 colnames(crw) <- c("Site", "m.y", "siteave", "SD", "SE")
 crw
@@ -123,7 +125,11 @@ ggplot(alltemp, mapping= aes(m.y, siteave, group = Site, color = Site)) +
    xlab("Month/Year") + ylab("Temperature [C]") +
    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
       geom_hline(yintercept = 29.5, color = "light blue", linetype = 2) +
-   geom_hline(yintercept = 30.5, color = "light blue")  
+   geom_hline(yintercept = 30.5, color = "light blue")  +
+   annotate("rect", xmin = '11/2015', xmax = '5/2016', ymin = -Inf, ymax = Inf,
+           alpha = .1,fill = "gray10") +
+   annotate("rect", xmin = '11/2016', xmax = '5/2017', ymin = -Inf, ymax = Inf,
+           alpha = .1,fill = "gray10")
   
 #ggsave('figures/line_TLtemp.pdf', width = 7, height = 4)
 ```
