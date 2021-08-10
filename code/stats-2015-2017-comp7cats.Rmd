@@ -1,8 +1,8 @@
 ---
-title: "stats-2015-2017 coral health data"
-author: "CKim"
-date: "September 7, 2017"
-output: html_document
+title: "Statistics on 2015-2017 coral health data from Timor-Leste"
+author: "Catherine Kim"
+date: "`r Sys.time()"
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -42,7 +42,7 @@ library(Rmisc)
 library(tidyr)
 library(dplyr)
 
-# ave disease aross years at site and depth
+# ave disease across years at site and depth
 compd.t %>% 
    mutate(disease = WS + GA) %>%
    group_by(Site, Depth ) %>% 
@@ -121,7 +121,7 @@ alg <- compd.t %>%
 alg
 ```
 
-```{r check?}
+```{r check}
 compd.tl <- gather(compd.t, Status, Percent, CCA, BL, AllAlgae, TL, OTH, WS, Healthy, GA)
 head(compd.tl)
 
@@ -140,6 +140,7 @@ hist(sqrt(compd.t$BL))
 qqnorm(sqrt(compd.t$BL))
 #qqplot(sqrt(compd.t$BL))
 
+library(car)
 leveneTest((BL)~Year*Site*Depth, compd.t)
 ```
 
@@ -149,6 +150,7 @@ bl.se
 
 summarySE(compd.t, "BL", c("Year", "Site"))
 
+library(ggpubr)
 ggboxplot(
   data = compd.t, x = "Site", y = "BL", facet.by = 'Depth',
   color = "Year", palette = "jco"
@@ -167,11 +169,13 @@ ggboxplot(
 
 ```
 ```{r healthy repeated measures}
+library(nlme)
 h.lme <- lme((Healthy) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t,
              na.action = na.exclude)
 h.lme
 summary(h.lme)
 Anova(h.lme)  
+library(emmeans)
 emmeans(h.lme, list(pairwise ~ Year), adjust = "tukey")
 emmeans(h.lme, list(pairwise ~ Site), adjust = "tukey")
 emmeans(h.lme, list(pairwise ~ Depth), adjust = "tukey")
