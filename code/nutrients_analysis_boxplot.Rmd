@@ -1,0 +1,228 @@
+---
+title: "Seawater nutrients analysis and graph"
+author: "Catherine Kim"
+date: '`r Sys.time()`'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Analaysis of seawater nutrients collected on transects in Timor-Leste 2015
+
+```{r read in packages, message=FALSE, warning=FALSE}
+library(reshape2)
+library(car)
+library(lme4)
+library(TukeyC)
+library(nlme)
+library(multcomp)
+library(plyr)
+library(tidyverse)
+library(here)
+```
+
+Reading in seawater nutrient data from flow injection analysis:
+
+```{r pressure, echo=FALSE}
+nu_dat <- read.csv(here("data/FIA-1-R-allreps-T24.csv"), header = TRUE) %>% 
+   mutate_if(is.character, as.factor)
+nu_dat$Transect <- as.factor(nu_dat$Transect)  
+nu_dat$Depth <- relevel(nu_dat$Depth, ref = "5m")
+
+summary(nu_dat)
+str(nu_dat)
+nrow(nu_dat)
+
+nu_dat2 <- subset(nu_dat, nu_dat$Nutrient..uM. != "NO2")
+nrow(nu_dat2)
+nu_dat2 <-nu_dat2[-(which(is.na(nu_dat2$Concentration))),]
+```
+
+```{r tidy up the data}
+# data to wide
+nu_w <- reshape(nu_dat, timevar = "Nutrient..uM.", idvar = c("Sample.ID", "Pop", "Site2", "Site",
+                                                           "Depth", "Transect", "Rep", "Location"), direction = "wide")
+head(nu_w)
+which(is.na(nu_w))
+
+# rename nutrients
+x <- colnames(nu_w)
+x[9:12] <- c("PO4", "NH4", "NO2", "NO3")
+colnames(nu_w) <- x
+
+# DIN
+nu_w$DIN <- rowSums(nu_w[,c("NH4", "NO2", "NO3")],
+                    na.rm = T)
+
+# nitrate + nitrite = NN
+nu_w$NN <- rowSums(nu_w[,c("NO2", "NO3")],
+                    na.rm = T)
+
+nu_w[which(is.na(nu_w)),]
+nu_w <- nu_w[which(complete.cases(nu_w)),]
+```
+
+## Site averages of nutrients
+
+```{r}
+# average nutrients by site and depth
+nu_ave <- nu_dat2 %>% 
+   group_by(Site2, Depth, Nutrient..uM.) %>% 
+   summarize(ave = mean(Concentration),
+             SE = sd(Concentration)/sqrt(n())) 
+
+# ave nu per site depth with NN
+nuw_ave <- nu_w %>% 
+   pivot_longer(c("PO4", "NH4", "NO2", "NO3", "DIN", "NN"), names_to = "nu", values_to = "conc") %>% 
+   group_by(Site2, Depth, nu) %>% 
+   summarize(ave = mean(conc),
+             SE = sd(conc)/sqrt(n())) %>%
+   gather(k, v, 4:5) %>% 
+   unite(km, k, nu) %>% 
+   spread(km, v, fill = 0)
+nuw_ave
+```
+
+```{r boxplot of nutrients}
+b<- ggplot(nu_dat2, aes(x = Site2, y = Concentration, fill = Depth)) + 
+   geom_boxplot() + 
+   geom_jitter(shape = 1, color="black", size=1, alpha=0.9) +
+   facet_grid(Nutrient..uM.~., scales = "free_y") +
+   labs(title = "Nutrient Concentrations", x = "Site", y = "Concentration [uM]")
+b+ theme_classic() +
+   theme(plot.title = element_text("sans", "bold",color = "black", 30),
+         text = element_text(size = 16))
+```
+
+```{r}
+pairs(nu_w)
+```
+
+### PO4 analysis
+
+```{r subset po4, check normality}
+po4 <- subset(nu_dat, nu_dat$Nutrient == "PO4")
+po4 <- po4[-(which(is.na(po4$Concentration))),]
+plot(po4$Site2, po4$Concentration, main = "PO4")
+head(po4)
+hist(po4$Concentration, xlab = "uM", main = "PO4")
+shapiro.test(po4$Concentration)
+leveneTest(Concentration ~ Site, data = po4)
+leveneTest(Concentration ~ Transect, data = po4)
+```
+
+```{r po4 ANOVA}
+po4.aov4 <- aov(Concentration ~ Site2*Depth, data = po4)  ## use
+summary(po4.aov4)
+TukeyHSD(po4.aov4, "Site2")
+TukeyHSD(po4.aov4, "Transect")
+```
+
+### NH4 analysis
+
+```{r nh4 subset, check normality}
+nu_w[order(nu_w$NH4, decreasing = T),]
+nh4 <- subset(nu_dat, nu_dat$Nutrient == "NH4")
+nh42 <-nh4[-(which(is.na(nh4$Concentration))),]
+nrow(nh42)
+min <- which(is.na(nh4$Concentration))
+
+hist(nh4$Concentration, xlab = "uM", main = "NH4")
+
+hist(sqrt(nh4$Concentration), xlab = "uM", main = "NH4")
+qqnorm(sqrt(nh4$Concentration))
+qqline(sqrt(nh4$Concentration))
+shapiro.test(sqrt(nh4$Concentration))
+
+hist(log(nh4$Concentration), xlab = "uM", main = "NH4") # good
+qqnorm(log(nh4$Concentration))
+qqline(log(nh4$Concentration))
+shapiro.test(log(nh4$Concentration))
+```
+
+```{r nh4 anova}
+nh4.a <- aov(log(Concentration) ~ Site*Depth, data = nh4)
+summary(nh4.a)
+plot(nh4.a)
+
+Anova(lm(log(Concentration) ~ Site2*Depth*Transect, data = nh4))
+
+nh4.aov4 <- aov(Concentration ~ Site2*Depth, data = nh4)  ## use
+summary(nh4.aov4)
+TukeyHSD(nh4.aov4, "Site2")
+TukeyHSD(po4.aov4, "Transect")
+```
+
+### NO2 + NO3 analysis
+
+```{r NO2 + NO3 subset, check normality}
+## NO3 + no2 ----
+nn <- subset(nu_dat, nu_dat$Nutrient == "NO3")
+#no3 <-no3[-(which(is.na(no3$Concentration))),]
+
+#no3_S <- subset(no3, nu_dat$Depth == "5m")
+mean(nu_w$NN, na.rm=T)
+plot(nu_w$Site, nu_w$NN)
+
+hist(nu_w$NN, xlab = "uM", main = "NO3+NO2")
+qqnorm(nu_w$NN)
+qqline(nu_w$NN)
+shapiro.test(nu_w$NN)
+
+hist(sqrt(nu_w$NN), xlab = "uM", main = "NO3+NO2")  #sqrt good
+qqnorm(sqrt(nu_w$NN))
+qqline(sqrt(nu_w$NN))
+shapiro.test(sqrt(nu_w$NN))
+
+nn.a <- aov(sqrt(NN) ~ Site*Depth, data = nu_w)
+summary(nn.a)
+plot(nn.a)
+TukeyHSD(nn.a)
+
+Anova(lm(sqrt(NN) ~ Site2*Depth, data = nu_w))
+```
+
+### DIN (dissolved inorganic nitrogen) analysis
+
+```{r DIN checks}
+mean(nu_w$DIN, na.rm=T)
+sd(nu_w$DIN, na.rm=T)/sqrt(nrow(nu_w))
+plot(nu_w$Site,nu_w$DIN)
+
+hist(nu_w$DIN, xlab = "uM", main = "DIN")
+qqnorm(nu_w$DIN)
+qqline(nu_w$DIN)
+shapiro.test(nu_w$DIN)
+
+hist(log10(nu_w$DIN), xlab = "uM", main = "log10 DIN")  #sqrt good
+qqnorm(log10(nu_w$DIN))
+qqline(log10(nu_w$DIN))
+shapiro.test(log10(nu_w$DIN))
+library(car)
+leveneTest(log10(DIN) ~ Site * Depth, data = nu_w)
+```
+
+```{r DIN ANOVA}
+DIN.a <- aov(log10(nu_w$DIN) ~ Site2*Depth, data = nu_w)
+summary(DIN.a)
+plot(DIN.a)
+TukeyHSD(DIN.a)
+```
+
+### manova with Nitrate + nitrite
+
+```{r}
+n <- with(nu_w, cbind(PO4, log10(NH4), sqrt(NN) ))
+colnames(n) <- c("PO4", "NH4", "NO3")
+head(n)
+
+factors <- po4[,2:7]
+head(factors)
+
+nn.man <- manova(n ~ Site*Depth, data = factors)
+summary(nn.man)
+```
