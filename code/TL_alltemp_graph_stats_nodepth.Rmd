@@ -2,7 +2,7 @@
 title: "Timoe-Leste 2015-2017 temperature data"
 author: "Catherine Kim"
 date: "December 16, 2020"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
