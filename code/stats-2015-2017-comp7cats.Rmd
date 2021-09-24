@@ -34,8 +34,57 @@ levels(compd.t$Site2)
 
 head(compd.t)
 ```
+# Healthy coral statistics
 
-## summary stats
+```{r healthy hist plot}
+hist(compd.t$Healthy)
+shapiro.test(compd.t$Healthy)
+
+ggboxplot(
+  compd.t, x = "Site2", y = "Healthy", facet.by = 'Depth',
+  color = "Year", palette = "jco"
+  )
+```
+
+```{r healthy repeated measures}
+library(nlme)
+h.lme <- lme((Healthy) ~ Year * Site2 *Depth, random = ~1|num_id, data = compd.t,
+             na.action = na.exclude)
+h.lme
+summary(h.lme)
+Anova(h.lme)  
+library(emmeans)
+emmeans(h.lme, list(pairwise ~ Year), adjust = "tukey")
+emmeans(h.lme, list(pairwise ~ Site2), adjust = "tukey")
+emmeans(h.lme, list(pairwise ~ Depth), adjust = "tukey")
+```
+
+```{r summarize healthy by site and year}
+library(Rmisc)
+
+comp.h <- summarySE(compd.t, "Healthy", c("Year", "Site2", "Depth"))
+head(comp.h)
+
+comp.hs <- summarySE(compd.t, "Healthy", c("Site2"))
+head(comp.hs)
+
+comp.hd <- summarySE(compd.t, "Healthy", c("Depth"))
+head(comp.hd)
+
+comp.hyr <- summarySE(compd.t, "Healthy", c("Year"))
+head(comp.hyr)
+
+mean(compd.t$Healthy)
+sd(compd.t$Healthy)/sqrt(length(compd.t))
+
+comp.ave <- compd.t %>% 
+   group_by(Site2, Year) %>%
+   summarise_all(mean)
+
+bl.ave <- summarySE(compd.t, "BL", c("Year", "Site2"))
+ws.ave <- summarySE(compd.t, "WS", c("Year", "Site2"))
+```
+## Disease/Comromised states statistics
 
 ```{r total disease ave by site and depth}
 library(Rmisc)
@@ -154,56 +203,6 @@ ggboxplot(
   )
 ```
 
-# Healthy stats
-
-```{r healthy hist plot}
-hist(compd.t$Healthy)
-shapiro.test(compd.t$Healthy)
-
-ggboxplot(
-  compd.t, x = "Site2", y = "Healthy", facet.by = 'Depth',
-  color = "Year", palette = "jco"
-  )
-
-```
-```{r healthy repeated measures}
-library(nlme)
-h.lme <- lme((Healthy) ~ Year * Site2 *Depth, random = ~1|num_id, data = compd.t,
-             na.action = na.exclude)
-h.lme
-summary(h.lme)
-Anova(h.lme)  
-library(emmeans)
-emmeans(h.lme, list(pairwise ~ Year), adjust = "tukey")
-emmeans(h.lme, list(pairwise ~ Site2), adjust = "tukey")
-emmeans(h.lme, list(pairwise ~ Depth), adjust = "tukey")
-```
-
-```{r summarize healthy by site and year}
-library(Rmisc)
-
-comp.h <- summarySE(compd.t, "Healthy", c("Year", "Site2", "Depth"))
-head(comp.h)
-
-comp.hs <- summarySE(compd.t, "Healthy", c("Site2"))
-head(comp.hs)
-
-comp.hd <- summarySE(compd.t, "Healthy", c("Depth"))
-head(comp.hd)
-
-comp.hyr <- summarySE(compd.t, "Healthy", c("Year"))
-head(comp.hyr)
-
-mean(compd.t$Healthy)
-sd(compd.t$Healthy)/sqrt(length(compd.t))
-
-comp.ave <- compd.t %>% 
-   group_by(Site2, Year) %>%
-   summarise_all(mean)
-
-bl.ave <- summarySE(compd.t, "BL", c("Year", "Site2"))
-ws.ave <- summarySE(compd.t, "WS", c("Year", "Site2"))
-```
 
 # Plot of disease and compromised health states
 
