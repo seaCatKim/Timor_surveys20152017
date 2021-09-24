@@ -36,6 +36,24 @@ head(compd.t)
 ```
 # Healthy coral statistics
 
+```{r summarize healthy corals}
+mean(compd.t$Healthy) # overall percent healthy coral
+sd(compd.t$Healthy)/sqrt(length(compd.t)) # SE healthy coral
+
+library(Rmisc)
+comp.h <- summarySE(compd.t, "Healthy", c("Year", "Site2", "Depth"))
+head(comp.h)
+
+comp.hs <- summarySE(compd.t, "Healthy", c("Site2"))
+head(comp.hs)
+
+comp.hd <- summarySE(compd.t, "Healthy", c("Depth"))
+head(comp.hd)
+
+comp.hyr <- summarySE(compd.t, "Healthy", c("Year"))
+head(comp.hyr)
+```
+
 ```{r healthy hist plot}
 hist(compd.t$Healthy)
 shapiro.test(compd.t$Healthy)
@@ -59,24 +77,10 @@ emmeans(h.lme, list(pairwise ~ Site2), adjust = "tukey")
 emmeans(h.lme, list(pairwise ~ Depth), adjust = "tukey")
 ```
 
-```{r summarize healthy by site and year}
-library(Rmisc)
 
-comp.h <- summarySE(compd.t, "Healthy", c("Year", "Site2", "Depth"))
-head(comp.h)
+## Disease/Compromised states statistics
 
-comp.hs <- summarySE(compd.t, "Healthy", c("Site2"))
-head(comp.hs)
-
-comp.hd <- summarySE(compd.t, "Healthy", c("Depth"))
-head(comp.hd)
-
-comp.hyr <- summarySE(compd.t, "Healthy", c("Year"))
-head(comp.hyr)
-
-mean(compd.t$Healthy)
-sd(compd.t$Healthy)/sqrt(length(compd.t))
-
+```{r compromised states averages}
 comp.ave <- compd.t %>% 
    group_by(Site2, Year) %>%
    summarise_all(mean)
@@ -84,10 +88,8 @@ comp.ave <- compd.t %>%
 bl.ave <- summarySE(compd.t, "BL", c("Year", "Site2"))
 ws.ave <- summarySE(compd.t, "WS", c("Year", "Site2"))
 ```
-## Disease/Comromised states statistics
 
 ```{r total disease ave by site and depth}
-library(Rmisc)
 library(tidyr)
 library(dplyr)
 
@@ -151,7 +153,7 @@ sd(compave$cave)/sqrt(length(compave))
 
 ```{r ave disease and comp health by site year}
 cd <- compd.t %>% 
-   dplyr::mutate(compd = CCA + BL + AllAlgae + TL + OTH + GA + WS) %>% 
+   dplyr::mutate(compd = CCA + BL + AllAlgae + TL + OTH + GA + WS)%>% 
    group_by(Site2,Year) %>% 
    dplyr::summarize(avecd = mean(compd),
              SE = sd(compd)/sqrt(n()))
@@ -177,6 +179,8 @@ hist(sqrt(compd.tl$Percent))
 
 ## ANOVAS of compromised health categories 
 
+### bleaching
+
 ```{r bleaching hist and plot}
 hist(compd.t$BL)
 qqnorm(compd.t$BL)
@@ -188,6 +192,20 @@ qqnorm(sqrt(compd.t$BL))
 
 library(car)
 leveneTest((BL)~Year*Site2*Depth, compd.t)
+```
+
+```{r bleaching lmer repeated anova}
+library(nlme)
+bl.lme <- lme(sqrt(BL) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t,
+              na.action = na.exclude)
+bl.lme
+summary(bl.lme)
+library(car)
+Anova(bl.lme) # year:site:depth interaction
+library(emmeans)
+bl.tuk <- emmeans(bl.lme, list(pairwise ~ Year:Site:Depth), adjust = "tukey")
+bl.tukpair <- as.data.frame(bl.tuk$`pairwise differences of Year, Site, Depth`)
+bl.tukpair[which(bl.tukpair$p.value < 0.05),]
 ```
 
 ```{r bleaching summary stats and plot}
@@ -203,21 +221,82 @@ ggboxplot(
   )
 ```
 
+### algae overgrowth anova
+
+```{r anova algae overgrowth}
+hist(compd.t$AllAlgae + compd.t$CCA)
+qqnorm(compd.t$AllAlgae + compd.t$CCA)
+qqnorm(compd.t$AllAlgae)
+leveneTest((AllAlgae)~Year*Site*Depth, trans.comp)
+
+aa.an <- aov(AllAlgae~Year*Site*Depth, trans.comp)
+summary(aa.an)
+TukeyHSD(aa.an)
+
+ggboxplot(
+  data = compd.t, x = "Site", y = "AllAlgae", 
+  color = "Year", palette = "jco"
+  )
+aa.se <- summarySE(compd.t, "AllAlgae", c("Year", "Site"))
+aa.se
+```
+
+```{r algae lmer repeated anova}
+aa.lme <- lme((AllAlgae) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t, na.action = na.exclude)
+aa.lme
+summary(aa.lme)
+Anova(aa.lme)  # Year:site interaction
+emmeans(aa.lme, list(pairwise ~ Year:Site), adjust = "tukey")
+```
+
+### CCA overgrowth
+
+```{r CCCA}
+hist(compd.t$CCA)
+compd.t$slogCCA <- log10((compd.t$CCA * (N-1) + .5)/N)
+hist((compd.t$slogCCA))
+#qqnorm(log10(compd.t$CCA+1))
+qqnorm(sqrt(compd.t$CCA))
+
+leveneTest(sqrt(CCA)~Year*Site*Depth, trans.comp) # not significant
+
+cca.an <- aov(sqrt(CCA)~Year*Site*Depth, trans.comp)
+summary(cca.an)
+TukeyHSD(cca.an)
+```
+```{r cca summary}
+cca.se <- summarySE(compd.t, "CCA", c("Year", "Site"))
+
+ggboxplot(
+  data = compd.t, x = "Site", y = "CCA", facet.by = 'Depth',
+  color = "Year", palette = "jco"
+  )
+```
+
+```{r CCA lmer repeated anova}
+cca.lme <- lme((CCA) ~ Year * Site*Depth, random = ~1|num_id, data = trans.comp,
+             na.action = na.exclude)
+cca.lme
+summary(cca.lme)
+Anova(cca.lme)  # sig year:site, site:depth interactions
+emmeans(cca.lme, list(pairwise ~ Year:Site), adjust = "tukey")
+emmeans(cca.lme, list(pairwise ~ Site:Depth), adjust = "tukey")
+```
 
 # Plot of disease and compromised health states
 
 ## combine GAs with OTHER for plot
 ```{r}
-compd.t
+compd.plot <- compd.t
 
-compd.t$OTH <-  compd.t$OTH + compd.t$GA
-compd.t$GA <- NULL
+compd.plot$OTH <-  compd.t$OTH + compd.t$GA
+compd.plot$GA <- NULL
 ```
 
 ## average categories by site and convert to long format
 
 ```{r average disease and compromised health categories by site}
-ave_compd <- compd.t %>% 
+ave_compd <- compd.plot %>% 
    pivot_longer(AllAlgae:WS,
                 names_to = "Category",
                 values_to = "Percent") %>% 
