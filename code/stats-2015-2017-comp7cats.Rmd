@@ -207,3 +207,50 @@ comp.ave <- compd.t %>%
 bl.ave <- summarySE(compd.t, "BL", c("Year", "Site"))
 ws.ave <- summarySE(compd.t, "WS", c("Year", "Site"))
 ```
+
+# Plot of disease and compromised health states
+
+## combine GAs with OTHER for plot
+```{r}
+compd.t
+
+compd.t$OTH <-  compd.t$OTH + compd.t$GA
+compd.t$GA <- NULL
+```
+
+## average categories by site and convert to long format
+
+```{r average disease and compromised health categories by site}
+ave_compd <- compd.t %>% 
+   pivot_longer(AllAlgae:WS,
+                names_to = "Category",
+                values_to = "Percent") %>% 
+   group_by(Year, Site2, Category) %>% 
+      dplyr::summarize(avePer = mean(Percent))
+
+ave_compd
+```
+
+## stacked graph without depth facet
+
+```{r average by year and site}
+ave_compd$Category <- factor(ave_compd$Category, levels=c("WS", "OTH", "TL", "CCA","AllAlgae", "BL", "Healthy"))
+
+ave_compd
+```
+
+```{r no facet by depth}
+ggplot(ave_compd, aes((Year), avePer,  fill = Category)) +
+   facet_grid(.~Site2, switch = "x") +
+    geom_bar(position="stack", stat="identity")+ 
+ #  ggtitle("Signs of Compromised Health 2015, 2017") +
+   theme_classic() +
+labs(x = "", y = "Percent") +
+   theme(plot.title = element_text("sans", "bold",color = "black", 15)) +
+   theme(text = element_text(size = 16)) +
+   theme(axis.ticks.x = element_blank()) + #, panel.background = element_rect("gray85"))+
+   theme(axis.text.x = element_text(hjust = 0.5),
+         legend.title = element_blank())+
+   scale_fill_brewer(palette="RdYlBu")
+ggsave(here::here('figures/stacked-comphealth-20152017-nodepth.pdf'), width = 7, height = 4)
+```
