@@ -14,7 +14,7 @@ Read in coral health survey data from 2015 and 2017 and combine into one data fr
 ```{r read in data, include=FALSE}
 library(here) # to use relative file paths to read in data
 library(readr)
-comp1517 <- read_csv(here::here("data/CoralHealth-2015-2017edit042021-R-genmorph.csv")) 
+comp1517 <- read_csv(here("data/CoralHealth-2015-2017edit092021-R-genmorph.csv")) 
 
 library(dplyr)
 comp1517_factor <- comp1517 %>%  mutate(across(where(is.character),as.factor))
@@ -25,7 +25,7 @@ head(comp1517_factor)
 ```
 
 ```{r create unique transect id}
-comp1517_factor$long_id <- as.factor(paste(comp1517_factor$Site,
+comp1517_factor$long_id <- as.factor(paste(comp1517_factor$Site2,
                                            comp1517_factor$Depth,
                                            comp1517_factor$Transect,
                                            sep = "_"))
@@ -46,23 +46,20 @@ library(tidyr)
 library(dplyr)
 
 ACRcount <- comp1517_factor %>% 
-   group_by(Year, Site, Depth, Transect, num_id, GEN, morph) %>% 
-   summarize(tot = sum(Number))%>% 
- 
-      group_by(Year, Site, Depth, Transect,num_id, GEN, morph) %>% 
-   summarize(totmorph = sum(tot))%>% 
-      filter(GEN == "ACR") %>% 
-      pivot_wider(names_from = morph, 
+   group_by(Year, Site2, Depth, Transect, num_id, GEN, morph) %>% 
+   dplyr::summarize(totmorph = sum(Number)) %>% 
+        filter(GEN == "ACR") %>% 
+      pivot_wider(names_from = morph,
                   values_from = totmorph,
-                  values_fill = 0) %>% 
+                  values_fill = 0) %>%
    pivot_longer(bush:bottle, names_to = 'morph', values_to = 'totmorph')
 
 ACRtab <- ACRcount %>% filter(morph == 'corym' | morph == 'tab') %>%
-   summarize(tottab = sum(totmorph))
+   dplyr::summarize(tottab = sum(totmorph))
 
 library(ggpubr) 
 ggboxplot(
-  ACRtab, x = "Site", y = "tottab", facet.by = 'Depth',
+  ACRtab, x = "Site2", y = "tottab", facet.by = 'Depth',
   color = "Year", palette = "jco"
   )
 
@@ -71,40 +68,42 @@ hist(ACRtab$tottab)
 hist(log10(ACRtab$tottab))
 qqnorm(log10(ACRtab$tottab+.1))
 library(car)
-leveneTest(tottab ~ Year * Site * Depth, data = ACRtab)
+leveneTest(tottab ~ Year * Site2 * Depth, data = ACRtab)
 ```
 ```{r repeated measures anova tabulate}
 # normal anova
-summary(aov(log10(tottab + .1) ~ Year * Site * Depth +
+summary(aov(log10(tottab + .1) ~ Year * Site2 * Depth +
                Error(num_id), data = ACRtab))
 
 # mixed model approach
 library(nlme)
-acr.lme <- lme(log10(tottab + .1 ) ~ Year *Site * Depth, 
+acr.lme <- lme(log10(tottab + .1 ) ~ Year *Site2 * Depth, 
                random = ~1|num_id,
                data = ACRtab, na.action = na.exclude)
 #acr.lme
 summary(acr.lme)
 library(car)
-Anova(acr.lme)
+Anova(acr.lme) # used
 library(emmeans)
-emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
+emmeans(acr.lme, list(pairwise ~ Site2), adjust = "tukey")
+```
 
-# random intercept and slope
-acr.lme2 <- lme(log10(tottab + .1) ~ Year *Site * Depth, 
+```{r random intercept and slope}
+acr.lme2 <- lme(log10(tottab + .1) ~ Year *Site2 * Depth, 
                 random = ~Year|num_id,
                data = ACRtab, na.action = na.exclude)
-acr.lme2
+
 summary(acr.lme2)
 Anova(acr.lme2)
-emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
+emmeans(acr.lme, list(pairwise ~ Site2), adjust = "tukey")
 
 anova(acr.lme, acr.lme2)  # not significantly different
 ```
+
 ```{r average number of tabulate acroporids per site}
 ACRtabave <- ACRtab %>% 
-   group_by( Site, GEN) %>% 
-   summarize(ave = mean(tottab), SE = sd(tottab)/n())
+   group_by( Site2, GEN) %>% 
+   dplyr::summarize(ave = mean(tottab), SE = sd(tottab)/n())
 ACRtabave
 ```
 
@@ -113,11 +112,11 @@ ACRtabave
 ```{r count acropora branching}
 ACRbracount <- ACRcount %>% 
    filter(morph == "br" | morph == "bush" | morph == "stag") %>% 
-   summarize(totbra = sum(totmorph))
+   dplyr::summarize(totbra = sum(totmorph))
 
 # boxplot
 ggboxplot(
-  ACRbracount, x = "Site", y = "totbra", facet.by = 'Depth',
+  ACRbracount, x = "Site2", y = "totbra", facet.by = 'Depth',
   color = "Year", palette = "jco"
   )
 
@@ -125,20 +124,21 @@ ggboxplot(
 hist(ACRbracount$totbra + 0.1)
 hist(log10(ACRbracount$totbra +0.1))
 qqnorm(log10(ACRbracount$totbra +0.1))
-leveneTest(totbra ~ Year * Site * Depth, data = ACRbracount)
+leveneTest(totbra ~ Year * Sit2e * Depth, data = ACRbracount)
 ```
 ```{r repeated measures anova branching}
-acrbra.lme <- lme(log10(totbra + 0.1) ~ Year * Site * Depth, 
+acrbra.lme <- lme(log10(totbra + 0.1) ~ Year * Site2 * Depth, 
                   random = ~1|num_id,
                data = ACRbracount, na.action = na.exclude)
 acrbra.lme
 summary(acrbra.lme) # lowest AIC
 Anova(acrbra.lme)
-emmeans(acr.lme, list(pairwise ~ Site), adjust = "tukey")
+emmeans(acr.lme, list(pairwise ~ Site2), adjust = "tukey")
 emmeans(acr.lme, list(pairwise ~ Year), adjust = "tukey")
+```
 
-# random intercept and slope
-acrbra.lme2 <- lme(log10(totbra + 0.1) ~ Year * Site * Depth, random = ~Year|num_id,
+```{r branching random intercept and slope}
+acrbra.lme2 <- lme(log10(totbra + 0.1) ~ Year * Site2 * Depth, random = ~Year|num_id,
                data = ACRbracount, na.action = na.exclude)
 acrbra.lme2
 summary(acrbra.lme2)
@@ -151,23 +151,16 @@ anova(acrbra.lme, acrbra.lme2) # models not significantly different
 # relevel factors 
 ACRbracount$Depth <- relevel(ACRbracount$Depth, ref = "5m")
 
-# rename and reorder sites
-ACRbracount$Site <- ordered(ACRbracount$Site, levels = c("Rural-N", "Rural-E", "Urban-E", "Urban-W"))
-levels(ACRbracount$Site)[levels(ACRbracount$Site)=="Beloi"] <- "Rural-N"
-levels(ACRbracount$Site)[levels(ACRbracount$Site)=="Manatuto"] <- "Rural-E"
-levels(ACRbracount$Site)[levels(ACRbracount$Site)=="CristoRei"] <- "Urban-E"
-levels(ACRbracount$Site)[levels(ACRbracount$Site)=="DiliRock"] <- "Urban-W"
-
 # average branching acroporid per site, depth, year
 ACRbraave_site_d_yr <- ACRbracount %>% 
-   group_by( Site, Depth, Year, GEN) %>% 
-   summarize(ave = mean(totbra), SE = sd(totbra)/n()) 
+   group_by( Site2, Depth, Year, GEN) %>% 
+   dplyr::summarize(ave = mean(totbra), SE = sd(totbra)/n()) 
 ACRbraave_site_d_yr
 
 ggplot(ACRbracount, 
        aes(x = Year, y = totbra, fill = Depth)) +
    geom_boxplot() +
-   facet_wrap(vars(Site)) +
+   facet_wrap(vars(Site2)) +
    theme_classic() +
    theme(text = element_text(size = 16))
 
