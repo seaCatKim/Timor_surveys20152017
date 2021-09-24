@@ -3,8 +3,8 @@ title: "Seawater nutrients analysis and graph"
 author: "Catherine Kim"
 date: '`r Sys.time()`'
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -37,21 +37,21 @@ summary(nu_dat)
 str(nu_dat)
 nrow(nu_dat)
 
-nu_dat2 <- subset(nu_dat, nu_dat$Nutrient..uM. != "NO2")
-nrow(nu_dat2)
-nu_dat2 <-nu_dat2[-(which(is.na(nu_dat2$Concentration))),]
+# nu_dat2 <- subset(nu_dat, nu_dat$Nutrient..uM. != "NO2")
+# nrow(nu_dat2)
+# nu_dat2 <-nu_dat2[-(which(is.na(nu_dat2$Concentration))),]
 ```
 
 ```{r tidy up the data}
 # data to wide
-nu_w <- reshape(nu_dat, timevar = "Nutrient..uM.", idvar = c("Sample.ID", "Pop", "Site2", "Site",
+nu_w <- reshape(nu_dat, timevar = "Nutrient..uM.", idvar = c("Sample.ID", "Site2", "Site",
                                                            "Depth", "Transect", "Rep", "Location"), direction = "wide")
 head(nu_w)
 which(is.na(nu_w))
 
 # rename nutrients
 x <- colnames(nu_w)
-x[9:12] <- c("PO4", "NH4", "NO2", "NO3")
+x[which(x == "Concentration.PO4"):ncol(nu_w)] <- c("PO4", "NH4", "NO2", "NO3")
 colnames(nu_w) <- x
 
 # DIN
@@ -70,16 +70,16 @@ nu_w <- nu_w[which(complete.cases(nu_w)),]
 
 ```{r}
 # average nutrients by site and depth
-nu_ave <- nu_dat2 %>% 
-   group_by(Site2, Depth, Nutrient..uM.) %>% 
-   summarize(ave = mean(Concentration),
-             SE = sd(Concentration)/sqrt(n())) 
+# nu_ave <- nu_dat2 %>% 
+#    group_by(Site2, Depth, Nutrient..uM.) %>% 
+#    dplyr::summarize(ave = mean(Concentration),
+#              SE = sd(Concentration)/sqrt(n())) 
 
 # ave nu per site depth with NN
 nuw_ave <- nu_w %>% 
    pivot_longer(c("PO4", "NH4", "NO2", "NO3", "DIN", "NN"), names_to = "nu", values_to = "conc") %>% 
    group_by(Site2, Depth, nu) %>% 
-   summarize(ave = mean(conc),
+   dplyr::summarize(ave = mean(conc),
              SE = sd(conc)/sqrt(n())) %>%
    gather(k, v, 4:5) %>% 
    unite(km, k, nu) %>% 
@@ -87,15 +87,28 @@ nuw_ave <- nu_w %>%
 nuw_ave
 ```
 
+## Boxplot of nutrients by depth
+
 ```{r boxplot of nutrients}
-b<- ggplot(nu_dat2, aes(x = Site2, y = Concentration, fill = Depth)) + 
+nu_plot <- nu_w
+nu_plot$`NO3+NO2` <- nu_w$NN
+
+b<- nu_plot %>% 
+   dplyr::select(-NN, -NO3, -NO2) %>%  # remove redundant columns 
+   tidyr::pivot_longer(PO4:`NO3+NO2`,
+                names_to = "Nutrient",
+                values_to = "Concentration") %>% 
+ggplot(aes(x = Site2, y = Concentration, fill = Depth)) + 
    geom_boxplot() + 
    geom_jitter(shape = 1, color="black", size=1, alpha=0.9) +
-   facet_grid(Nutrient..uM.~., scales = "free_y") +
-   labs(title = "Nutrient Concentrations", x = "Site", y = "Concentration [uM]")
-b+ theme_classic() +
+   facet_grid(Nutrient~., scales = "free_y")  +
+   labs(x = "Site", y = "Concentration [uM]")
+
+b + theme_classic() +
    theme(plot.title = element_text("sans", "bold",color = "black", 30),
          text = element_text(size = 16))
+
+ggsave(here("figures/boxplot_seawater_nutrients.pdf"), height = 6)
 ```
 
 ```{r}
