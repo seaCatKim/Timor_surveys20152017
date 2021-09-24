@@ -68,16 +68,11 @@ nu_w <- nu_w[which(complete.cases(nu_w)),]
 
 ## Site averages of nutrients
 
-```{r}
-# average nutrients by site and depth
-# nu_ave <- nu_dat2 %>% 
-#    group_by(Site2, Depth, Nutrient..uM.) %>% 
-#    dplyr::summarize(ave = mean(Concentration),
-#              SE = sd(Concentration)/sqrt(n())) 
-
-# ave nu per site depth with NN
+```{r ave nurient per site and depth with combined nitrate and nitrite}
 nuw_ave <- nu_w %>% 
-   pivot_longer(c("PO4", "NH4", "NO2", "NO3", "DIN", "NN"), names_to = "nu", values_to = "conc") %>% 
+   pivot_longer(c("PO4", "NH4", "NO2", "NO3", "DIN", "NN"), 
+                names_to = "nu", 
+                values_to = "conc") %>% 
    group_by(Site2, Depth, nu) %>% 
    dplyr::summarize(ave = mean(conc),
              SE = sd(conc)/sqrt(n())) %>%
@@ -129,10 +124,12 @@ leveneTest(Concentration ~ Transect, data = po4)
 ```
 
 ```{r po4 ANOVA}
-po4.aov4 <- aov(Concentration ~ Site2*Depth, data = po4)  ## use
+po4.aov4 <- aov(Concentration ~ Site2*Depth, data = po4)  
 summary(po4.aov4)
 TukeyHSD(po4.aov4, "Site2")
 TukeyHSD(po4.aov4, "Transect")
+
+Anova(lm(Concentration ~ Site2*Depth, data = po4))
 ```
 
 ### NH4 analysis
@@ -224,6 +221,8 @@ DIN.a <- aov(log10(nu_w$DIN) ~ Site2*Depth, data = nu_w)
 summary(DIN.a)
 plot(DIN.a)
 TukeyHSD(DIN.a)
+
+Anova(lm(log10(DIN) ~ Site2*Depth, data = nu_w))
 ```
 
 ### manova with Nitrate + nitrite
