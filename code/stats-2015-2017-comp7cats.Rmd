@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## read in transect data with comp7 cats inc white syndrome (WS) and growth anomalies (GAs)
+## read in transect data with 8 categories including diseases white syndrome (WS) and growth anomalies (GAs)
 
 ```{r read in data with growth anomaolies (GAs) separated }
 compd.t <- read.csv(here::here('data/comp8GA_tave.csv'))
@@ -17,9 +17,9 @@ head(compd.t)
 ```
 
 ```{r create unique transect id}
-compd.t$long_id <- as.factor(paste(compd.t$Site, compd.t$Depth, compd.t$Transect, sep = "_"))
+compd.t$long_id <- as.factor(paste(compd.t$Site2, compd.t$Depth, compd.t$Transect, sep = "_"))
 
-#write.csv(levels(compd.t$id), "unique_ids.csv")
+write.csv(levels(compd.t$long_id), here("data/unique_ids.csv"))
 # write levels and add num id
 # read file with num id
 ids <- read.csv(here::here("data/unique_ids_wnum.csv"))
@@ -30,7 +30,7 @@ compd.t <- inner_join(compd.t, ids, by = 'long_id') # join unique transect ids
 compd.t$num_id <- as.factor(compd.t$num_id)
 compd.t$Year <- as.factor(compd.t$Year)
 
-levels(compd.t$Site)
+levels(compd.t$Site2)
 
 head(compd.t)
 ```
@@ -45,12 +45,9 @@ library(dplyr)
 # ave disease across years at site and depth
 compd.t %>% 
    mutate(disease = WS + GA) %>%
-   group_by(Site, Depth ) %>% 
+   group_by(Site2, Depth ) %>% 
    dplyr::summarize(dave = mean(disease),
              SE = sd(disease)/sqrt(n()))
-
-
-hist(compd.t$WS + compd.t$GA)
 
 # proportion of disease at Rural-N
 compd.t %>% 
@@ -59,7 +56,7 @@ compd.t %>%
 
 compd.t %>% 
    dplyr::mutate(disease = WS + GA)%>% 
-   filter(Site == 'Beloi') %>% 
+   filter(Site2 == 'Rural-N') %>% 
    dplyr::summarize(sum(disease))
 
 12.04151	/ 26.84603	
@@ -74,7 +71,7 @@ ws.ga.yr
 ```
 ```{r prevalence WS and GAs by site and year}
 ws.ga.styr <- compd.t %>% 
-   group_by(Site, Year) %>%  
+   group_by(Site2, Year) %>%  
    dplyr::summarize(WSave = mean(WS), WSSE = sd(WS)/sqrt(n()),
              GAave = mean(GA), GASE = sd(GA)/sqrt(n()))
 ws.ga.styr
@@ -84,10 +81,10 @@ ws.ga.styr
 # across sites, depth, and years
 compave <- compd.t %>% 
    mutate(comp = CCA + BL + AllAlgae + TL + OTH + GA) %>% 
-   group_by(Site, Depth, Transect, Year) %>% 
+   group_by(Site2, Depth, Transect, Year) %>% 
    dplyr::summarize(totcomp = sum(comp))%>%
    ungroup()%>% 
-   group_by(Site, Depth) %>% 
+   group_by(Site2, Depth) %>% 
    dplyr::summarize(cave = mean(totcomp),
              Se = sd(totcomp)/sqrt(n()))
 compave
@@ -95,7 +92,7 @@ compave
 # across site and depth, ave across years
 compd.t %>% 
    mutate(comp = CCA + BL + AllAlgae + TL + OTH) %>% 
-   group_by(Site, Depth) %>% 
+   group_by(Site2, Depth) %>% 
    dplyr::summarize(avecomp = mean(comp), SE = sd(comp)/sqrt(n()))
 
 # overall compromised health average
@@ -106,7 +103,7 @@ sd(compave$cave)/sqrt(length(compave))
 ```{r ave disease and comp health by site year}
 cd <- compd.t %>% 
    dplyr::mutate(compd = CCA + BL + AllAlgae + TL + OTH + GA + WS) %>% 
-   group_by(Site,Year) %>% 
+   group_by(Site2,Year) %>% 
    dplyr::summarize(avecd = mean(compd),
              SE = sd(compd)/sqrt(n()))
 cd
@@ -115,7 +112,7 @@ cd
 
 ```{r ave all algae growth per site}
 alg <- compd.t %>% 
-   group_by(Site, Year) %>% 
+   group_by(Site2, Year) %>% 
    dplyr::summarize(avealg = mean(AllAlgae),
              SE = sd(AllAlgae)/sqrt(n()))
 alg
@@ -141,54 +138,54 @@ qqnorm(sqrt(compd.t$BL))
 #qqplot(sqrt(compd.t$BL))
 
 library(car)
-leveneTest((BL)~Year*Site*Depth, compd.t)
+leveneTest((BL)~Year*Site2*Depth, compd.t)
 ```
 
 ```{r bleaching summary stats and plot}
-bl.se <- summarySE(compd.t, "BL", c("Year", "Site", 'Depth'))
+bl.se <- summarySE(compd.t, "BL", c("Year", "Site2", 'Depth'))
 bl.se
 
-summarySE(compd.t, "BL", c("Year", "Site"))
+summarySE(compd.t, "BL", c("Year", "Site2"))
 
 library(ggpubr)
 ggboxplot(
-  data = compd.t, x = "Site", y = "BL", facet.by = 'Depth',
+  data = compd.t, x = "Site2", y = "BL", facet.by = 'Depth',
   color = "Year", palette = "jco"
   )
 ```
 
 # Healthy stats
+
 ```{r healthy hist plot}
 hist(compd.t$Healthy)
 shapiro.test(compd.t$Healthy)
 
 ggboxplot(
-  compd.t, x = "Site", y = "Healthy", facet.by = 'Depth',
+  compd.t, x = "Site2", y = "Healthy", facet.by = 'Depth',
   color = "Year", palette = "jco"
   )
 
 ```
 ```{r healthy repeated measures}
 library(nlme)
-h.lme <- lme((Healthy) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t,
+h.lme <- lme((Healthy) ~ Year * Site2 *Depth, random = ~1|num_id, data = compd.t,
              na.action = na.exclude)
 h.lme
 summary(h.lme)
 Anova(h.lme)  
 library(emmeans)
 emmeans(h.lme, list(pairwise ~ Year), adjust = "tukey")
-emmeans(h.lme, list(pairwise ~ Site), adjust = "tukey")
+emmeans(h.lme, list(pairwise ~ Site2), adjust = "tukey")
 emmeans(h.lme, list(pairwise ~ Depth), adjust = "tukey")
-
 ```
 
 ```{r summarize healthy by site and year}
 library(Rmisc)
 
-comp.h <- summarySE(compd.t, "Healthy", c("Year", "Site", "Depth"))
+comp.h <- summarySE(compd.t, "Healthy", c("Year", "Site2", "Depth"))
 head(comp.h)
 
-comp.hs <- summarySE(compd.t, "Healthy", c("Site"))
+comp.hs <- summarySE(compd.t, "Healthy", c("Site2"))
 head(comp.hs)
 
 comp.hd <- summarySE(compd.t, "Healthy", c("Depth"))
@@ -201,11 +198,11 @@ mean(compd.t$Healthy)
 sd(compd.t$Healthy)/sqrt(length(compd.t))
 
 comp.ave <- compd.t %>% 
-   group_by(Site, Year) %>%
+   group_by(Site2, Year) %>%
    summarise_all(mean)
 
-bl.ave <- summarySE(compd.t, "BL", c("Year", "Site"))
-ws.ave <- summarySE(compd.t, "WS", c("Year", "Site"))
+bl.ave <- summarySE(compd.t, "BL", c("Year", "Site2"))
+ws.ave <- summarySE(compd.t, "WS", c("Year", "Site2"))
 ```
 
 # Plot of disease and compromised health states
