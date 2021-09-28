@@ -42,18 +42,6 @@ ggplot(temp, aes(x = Site, y = Temp, fill = Year)) +
    geom_point(aes(color = Year), position = position_jitter(0.21)) +
     theme_classic()
 ```
-```{r average difference between 5 and 10 m temp loggers}
-temp.same %>% 
-   filter(Method != "sat") %>% 
-   select(-N, -sd, -se, -ci) %>% 
-   pivot_wider(names_from = Depth,
-               values_from = Temp) %>% 
-   mutate(diff = `5m` - `10m`) %>% 
-   group_by(Site) %>% 
-   summarize(avediff = mean(diff)) %>% 
-   summarize(diff = mean(avediff), SE = sd(avediff))
-   
-```
 
 Assigning the austral season to each Month 1-3 = summer etc.
 
@@ -85,6 +73,18 @@ crw <- temp %>%
 colnames(crw) <- c("Site", "m.y", "siteave", "SD", "SE")
 crw
 
+```
+
+```{r average difference between 5 and 10 m temp loggers}
+temp.same %>% 
+   filter(Method != "sat") %>% 
+   select(-N, -sd, -se, -ci) %>% 
+   pivot_wider(names_from = Depth,
+               values_from = Temp) %>% 
+   mutate(diff = `5m` - `10m`) %>% 
+   group_by(Site) %>% 
+   summarize(avediff = mean(diff)) %>% 
+   summarize(diff = mean(avediff), SE = sd(avediff))
 ```
 
 ## Graph without facet by depth
@@ -179,6 +179,7 @@ boxplot(Temp~Method:season, data = temp.same, las = 2)
 ```
 
 ANOVA with type III sums of sqs following https://www.r-bloggers.com/2011/03/anova-%E2%80%93-type-iiiiii-ss-explained/
+
 ```{r Type III SS method by season anova}
 method.lm <- lm(Temp~Method*season, data = temp.same, contrasts = list(Method = contr.sum, season = contr.sum))
 Anova(method.lm, type = 'III')
