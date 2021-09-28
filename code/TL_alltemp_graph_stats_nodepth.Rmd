@@ -1,7 +1,7 @@
 ---
 title: "Timoe-Leste 2015-2017 temperature data"
 author: "Catherine Kim"
-date: "December 16, 2020"
+date: "September 28, 2021"
 output: html_document
 ---
 
@@ -17,8 +17,9 @@ library(here)
 ## Timor-Leste in situ and satellite temperature data from Nov 2015 to Jul 2017
 
 Monthly average of daily maximum temperature
+
 ```{r combine  sites 5 and 10 m depth montly mean from daily max, crw data}
-temp <- read_csv(here::here("data/alltemp_TL.csv")) %>% 
+temp <- read_csv(here::here("data/alltemp_TL_data.csv")) %>% 
    mutate_if(is.character, as.factor)
 head(temp)
 
@@ -31,6 +32,7 @@ temp$Depth <- relevel(temp$Depth, ref = '5m')
 # relevel Month/yr in correct order
 levels(temp$m.y)
 temp$m.y = factor(temp$m.y,levels(temp$m.y)[c(21,24,3,5,7,1,9,11,13,15,17,19,22,25,4,6,8,2,10,12,14,16,18,20,23)])
+# temp$m.y = factor(temp$m.y,levels(temp$m.y)[c(3,24,22,20,6,10,8,16,1,18,14,12,4,25,23,21,7,11,9,17,2,19,15,13,5)])
 ```
 
 ```{r boxplot Monthly temp ave by site}
@@ -41,7 +43,7 @@ ggplot(temp, aes(x = Site, y = Temp, fill = Year)) +
     theme_classic()
 ```
 
-Incorrect SE values for ANOVA stats - using the SE values from calculating the Monthly averages
+Using the SE values from calculating the Monthly averages
 No replication at site/depth, only one logger per site/depth and only one satellite 
 satellite data is repeated per depth
 
@@ -131,7 +133,7 @@ ggplot(alltemp, mapping= aes(m.y, siteave, group = Site, color = Site)) +
    annotate("rect", xmin = '11/2016', xmax = '5/2017', ymin = -Inf, ymax = Inf,
            alpha = .1,fill = "gray10")
   
-#ggsave('figures/line_TLtemp.pdf', width = 7, height = 4)
+ggsave(here("figures/line_TLtemp.pdf"), width = 7, height = 4)
 ```
 
 ## Statistics
