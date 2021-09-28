@@ -42,6 +42,18 @@ ggplot(temp, aes(x = Site, y = Temp, fill = Year)) +
    geom_point(aes(color = Year), position = position_jitter(0.21)) +
     theme_classic()
 ```
+```{r average difference between 5 and 10 m temp loggers}
+temp.same %>% 
+   filter(Method != "sat") %>% 
+   select(-N, -sd, -se, -ci) %>% 
+   pivot_wider(names_from = Depth,
+               values_from = Temp) %>% 
+   mutate(diff = `5m` - `10m`) %>% 
+   group_by(Site) %>% 
+   summarize(avediff = mean(diff)) %>% 
+   summarize(diff = mean(avediff), SE = sd(avediff))
+   
+```
 
 Assigning the austral season to each Month 1-3 = summer etc.
 
