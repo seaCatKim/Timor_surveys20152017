@@ -1,7 +1,7 @@
 ---
 title: "Repeated measures anova of hard coral from benthic composition"
 author: "Catherine Kim"
-date: "April 23, 2021"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Statistics on benthic composition from 15m Line Intercept Transects (LIT) in Timor-Leste from 2015 and 2017
 
-```{r Read in data from 15 m line intercept transects}
+```{r Read in data from 15 m line intercept transects, warning=FALSE}
 library(here)
 bencomp <- read.csv(here::here('data/bencomp-transect-20152017.csv'))
 
@@ -27,17 +27,21 @@ hist(bencomp$HardCoral)
 qqnorm(bencomp$HardCoral)
 qqline(bencomp$HardCoral)
 library(car)
-leveneTest(HardCoral ~ Year * Site2 * Depth, data = bencomp)
+leveneTest(HardCoral ~ Year * Site2 * Depth, 
+           data = bencomp)
 
 hist(sqrt(bencomp$HardCoral))
 qqnorm(sqrt(bencomp$HardCoral))
 qqline(sqrt(bencomp$HardCoral))
-leveneTest(sqrt(HardCoral) ~ Year * Site2 * Depth, data = bencomp)
+leveneTest(sqrt(HardCoral) ~ Year * Site2 * Depth, 
+           data = bencomp)
 ```
 
 ```{r repeated measures anova on hard coral cover}
 library(nlme)
-cor.lme <- lme(sqrt(HardCoral) ~ Site2 * Depth * Year, random = ~1|num_id, data = bencomp, na.action = na.exclude)
+cor.lme <- lme(sqrt(HardCoral) ~ Site2 * Depth * Year, 
+               random = ~1|num_id, 
+               data = bencomp, na.action = na.exclude)
 cor.lme
 summary(cor.lme)
 plot(cor.lme)
@@ -45,7 +49,9 @@ Anova(cor.lme) # car package
 
 library(emmeans)
 tuk.cor <- emmeans(cor.lme, list(pairwise ~ Site2:Depth:Year), adjust = "tukey")
+
 pair.cor <- as.data.frame(tuk.cor$`pairwise differences of Site2, Depth, Year`)
+
 sig.pair.cor <- pair.cor[which(pair.cor$p.value < 0.05),]
 sig.pair.cor
 ```
@@ -80,30 +86,31 @@ bencomp_long <- bencomp %>%
    pivot_longer(CCA:Turf, names_to = 'Major.Category', values_to = 'Percent') %>% 
    group_by(Year, Site2, Depth, Major.Category) %>% 
    dplyr::summarize(ave = mean(Percent))
-
 ```
 
 ```{r stacked bar graph of 2015 and 2017}
 bencomp_long$Major.Category <- as.factor(bencomp_long$Major.Category)
 levels(bencomp_long$Major.Category)
+
 bencomp_long$Major.Category <- relevel(bencomp_long$Major.Category, ref = "HardCoral")
+
 bencomp$Depth <- relevel(bencomp$Depth, ref = "5m")
 head(bencomp_long)
 
 library(ggplot2)
-ggplot(bencomp_long, aes(x=Year,y = ave, fill= factor(Major.Category,
-                                        levels = c("Turf", "Substrate.Sand", "SoftCoral",
-                                                   "Macroalgae", "Invert", "CCA",
-                                                   "HardCoral")))) + 
-   geom_bar( position="stack", stat="identity") +   facet_grid(Depth~Site2,
-            switch = "x") +
+ggplot(bencomp_long, 
+       aes(x=Year,y = ave, fill= factor(Major.Category,
+                                        levels = c("Turf","Substrate.Sand", "SoftCoral","Macroalgae", "Invert", "CCA", "HardCoral")))) + 
+   geom_bar( position="stack", stat="identity") +   facet_grid(Depth~Site2,switch = "x") +
    labs(title = "Benthic Composition", x = "Site and Year", y = "Percent") +
-      theme_classic() +
+   theme_classic() +
    #theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
-   theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+   theme(panel.border = element_blank(), 
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank(),
          panel.background = element_blank(),
-         text = element_text(size = 16))
-   #scale_fill_discrete(name="Benthic Category")
+         text = element_text(size = 16)) +
+   scale_fill_discrete(name="Benthic Category")
 
 ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.pdf'),
        height = 4, width = 7)

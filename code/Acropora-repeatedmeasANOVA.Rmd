@@ -1,7 +1,7 @@
 ---
 title: "Acropora counts, analysis by morphology"
 author: "Caterine Kim"
-date: "October 4, 2021"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 

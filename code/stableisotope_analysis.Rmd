@@ -1,20 +1,20 @@
 ---
 title: "stable isotope analysis"
 author: "Catherine Kim"
-date: "8/10/2021"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-library(here)
-library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 ```
 
 # Macroalgae collected on transects in Timor-Leste 2015 stable isotope analysis
 
-```{r read in data}
+```{r read in data, warning=FALSE}
+library(here)
+library(tidyverse)
+
 here()
 dat <- read.csv(here("data/StableIso_cleaned.csv"), header = TRUE) %>%   #no bad runs, missing site info
    mutate_if(is.character, as.factor)
@@ -162,6 +162,7 @@ plot(h.dn.mod)
 h.A <- Anova(h.dn.mod, type = "3")
 h.A
 ```
+
 ```{r hal d15N posthoc tests}
 library(multcomp)
 hdn.mc = glht(h.dn.mod,

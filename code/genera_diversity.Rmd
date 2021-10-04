@@ -1,7 +1,7 @@
 ---
 title: "Analysis of genera diversity"
 author: "Catherine Kim"
-date: "April 23, 2021"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Read in the data of coral genera counted on 15 x 2 belt transects. 
 
-```{r read in 2015 and 2017 genera data}
+```{r read in 2015 and 2017 genera data, message=FALSE, warning=FALSE}
 library(Rmisc)
 library(here)
 library(dplyr)
@@ -68,7 +68,7 @@ gen.sum <- cbind(gen[1:5], gen.sum)
 
 ## Graph genera diversity
 
-```{r summarySE pres/abs gen, graph}
+```{r summarySE pres/abs gen, warning=FALSE}
 gen.sum.se <- summarySE(gen.sum, "gen.sum", c("Site", "Depth", "Year"))
 
 library(ggplot2)
@@ -86,7 +86,8 @@ ggplot(gen.sum.se, aes(Year, gen.sum)) + geom_bar(stat = "identity") +
 ```
 
 # Shannon's diversity on genera
-```{r calculate shannon index}
+
+```{r calculate shannon index, message=FALSE, warning=FALSE}
 library(vegan)
 shan <- diversity(gen1, "shannon")
 shan <- round(shan,3)
@@ -99,7 +100,7 @@ shan.glm <- lm(shan~Year*Site*Depth, data = gen.shan)
 summary(shan.glm)
 plot(shan.glm)
 ```
-```{r check normality of shannon diversity}
+```{r check normality of shannon diversity, warning=FALSE}
 hist(gen.shan$shan)
 hist(sqrt(gen.shan$shan))
 
@@ -108,12 +109,13 @@ leveneTest(shan~Year*Site*Depth, data = gen.shan) # not significant
 leveneTest(sqrt(shan)~Year*Site*Depth, data = gen.shan) # not significant
 ```
 
-```{r anova Shannon}
+```{r anova Shannon, warning=FALSE}
 library(nlme)
 shan.lme2 <- lme(sqrt(shan) ~ Year * Site*Depth, random = ~1|num_id, data = gen.sum, na.action = na.exclude)
 plot(shan.lme2)
 summary(shan.lme2)
 Anova(shan.lme2)
+
 library(emmeans)
 emmeans(shan.lme2, list(pairwise ~ Site:Depth), adjust = "tukey")
 ```
