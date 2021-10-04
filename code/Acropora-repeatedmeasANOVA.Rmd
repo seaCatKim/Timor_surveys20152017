@@ -1,7 +1,7 @@
 ---
 title: "Acropora counts, analysis by morphology"
 author: "Caterine Kim"
-date: "April 23, 2020"
+date: "October 4, 2021"
 output: html_document
 ---
 
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Read in coral health survey data from 2015 and 2017 and combine into one data frame
 
-```{r read in data, include=FALSE}
+```{r read in data, include=TRUE}
 library(here) # to use relative file paths to read in data
 library(readr)
 comp1517 <- read_csv(here("data/CoralHealth-2015-2017edit092021-R-genmorph.csv")) 
@@ -25,25 +25,22 @@ head(comp1517_factor)
 ```
 
 ```{r create unique transect id}
-comp1517_factor$long_id <- as.factor(paste(comp1517_factor$Site2,
-                                           comp1517_factor$Depth,
-                                           comp1517_factor$Transect,
-                                           sep = "_"))
+comp1517_factor$long_id <-  as.factor(paste(comp1517_factor$Site2, comp1517_factor$Depth, comp1517_factor$Transect,
+                                            sep = "_"))
 
 levels(comp1517_factor$long_id)
 
-ids <- read.csv(here::here("data/unique_ids_wnum.csv"))
+ids <- read.csv(here::here("data/unique_ids.csv"))
 
-library(dplyr)
-comp1517_factor <- inner_join(comp1517_factor, ids, by = 'long_id')
+comp1517_factor <- inner_join(comp1517_factor, ids,
+                              by = 'long_id')
 comp1517_factor$num_id <- as.factor(comp1517_factor$num_id)
 ```
 
 ## Tabulate acroporid count and analysis
 
-```{r count acropora tabulate colonies}
+```{r count acropora tabulate colonies, warning=FALSE}
 library(tidyr)
-library(dplyr)
 
 ACRcount <- comp1517_factor %>% 
    group_by(Year, Site2, Depth, Transect, num_id, GEN, morph) %>% 
@@ -52,9 +49,11 @@ ACRcount <- comp1517_factor %>%
       pivot_wider(names_from = morph,
                   values_from = totmorph,
                   values_fill = 0) %>%
-   pivot_longer(bush:bottle, names_to = 'morph', values_to = 'totmorph')
+   pivot_longer(bush:bottle, names_to = 'morph',
+                values_to = 'totmorph')
 
-ACRtab <- ACRcount %>% filter(morph == 'corym' | morph == 'tab') %>%
+ACRtab <- ACRcount %>% 
+   filter(morph == 'corym' | morph == 'tab') %>%
    dplyr::summarize(tottab = sum(totmorph))
 
 library(ggpubr) 
@@ -124,7 +123,7 @@ ggboxplot(
 hist(ACRbracount$totbra + 0.1)
 hist(log10(ACRbracount$totbra +0.1))
 qqnorm(log10(ACRbracount$totbra +0.1))
-leveneTest(totbra ~ Year * Sit2e * Depth, data = ACRbracount)
+leveneTest(totbra ~ Year * Site2 * Depth, data = ACRbracount)
 ```
 ```{r repeated measures anova branching}
 acrbra.lme <- lme(log10(totbra + 0.1) ~ Year * Site2 * Depth, 
