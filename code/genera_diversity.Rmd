@@ -94,7 +94,6 @@ gen.sum %>%
              SE = sd(gen.sum)/sqrt(n()))
 ```
 
-
 # Shannon's diversity on genera
 
 ```{r calculate shannon index, message=FALSE, warning=FALSE}
