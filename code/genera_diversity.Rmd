@@ -85,6 +85,16 @@ ggplot(gen.sum.se, aes(Year, gen.sum)) + geom_bar(stat = "identity") +
 #ggsave("figures/genera_2015-2017.pdf", height = 5, width = 7)
 ```
 
+Genear meaned with SE across survey years.
+
+```{r genera ave across yr}
+gen.sum %>% 
+   group_by(Site, Depth) %>% 
+   summarize(meanG = mean(gen.sum),
+             SE = sd(gen.sum)/sqrt(n()))
+```
+
+
 # Shannon's diversity on genera
 
 ```{r calculate shannon index, message=FALSE, warning=FALSE}
