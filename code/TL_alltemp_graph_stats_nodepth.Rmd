@@ -23,7 +23,7 @@ temp <- read_csv(here::here("data/alltemp_TL_data.csv")) %>%
    mutate_if(is.character, as.factor)
 head(temp)
 
-temp$m.y <- as.factor(temp$m.y)
+temp$m.y <- as.factor(paste(temp$Month, temp$Year, sep = "/")) #rewrite m.y as month/year
 temp$Month <- as.factor(temp$Month)
 temp$Year <- as.factor(temp$Year)
 temp$Depth <- as.factor(temp$Depth)
@@ -31,8 +31,8 @@ temp$Depth <- relevel(temp$Depth, ref = '5m')
 
 # relevel Month/yr in correct order
 levels(temp$m.y)
+
 temp$m.y = factor(temp$m.y,levels(temp$m.y)[c(21,24,3,5,7,1,9,11,13,15,17,19,22,25,4,6,8,2,10,12,14,16,18,20,23)])
-# temp$m.y = factor(temp$m.y,levels(temp$m.y)[c(3,24,22,20,6,10,8,16,1,18,14,12,4,25,23,21,7,11,9,17,2,19,15,13,5)])
 ```
 
 ```{r boxplot Monthly temp ave by site}
@@ -95,7 +95,7 @@ average the 2 loggers per site
 temp.avelog <- temp.same %>% 
    filter(Method != "sat") %>% 
    group_by(Site, m.y) %>% 
-   summarise(siteave = mean(Temp), SD = sd(Temp), SE = SD/sqrt(n())) #, N = n())
+   dplyr::summarise(siteave = mean(Temp), SD = sd(Temp), SE = SD/sqrt(n())) #, N = n())
 
 temp.avelog
 
@@ -106,6 +106,8 @@ alltemp
 ```{r line graph all sites by Month/yr no depth facet}
 start <-  c("11/2015", "11/2016")
 end <-  c("5/2016", "5/2017")
+
+cbPalette <- c("#D55E00", "#56B4E9", "#009E73",  "#CC79A7")
 
 ggplot(alltemp, mapping= aes(m.y, siteave, group = Site, color = Site)) +
    geom_line()+
@@ -124,7 +126,7 @@ ggplot(alltemp, mapping= aes(m.y, siteave, group = Site, color = Site)) +
    annotate("rect", xmin = '11/2016', xmax = '5/2017', ymin = -Inf, ymax = Inf,
            alpha = .1,fill = "gray10")
   
-ggsave(here("figures/line_TLtemp.pdf"), width = 7, height = 4)
+#ggsave(here("figures/line_TLtemp.pdf"), width = 7, height = 4)
 ```
 
 ## Statistics
@@ -145,6 +147,7 @@ emmeans(site.lm, list(pairwise ~ Site), adjust = "tukey")
 boxplot(Temp~Site, data = temp.same)
 boxplot(Temp~season, data = temp.same)
 ```
+
 ```{r}
 site.lm2 <- lm(Temp~Site * season, data = temp.same, contrasts = list(Method = contr.sum, season = contr.sum))
 library(car)
@@ -165,6 +168,7 @@ ggplot(temp.same, aes(season, Temp)) +
 ```
 
 testing method (logger or satellite) by season
+
 ```{r method by season anova}
 method.lm <- lm(Temp~Method*season, data = temp.same)
 Anova(method.lm)
@@ -203,7 +207,7 @@ ggplot(temp.same, aes(season, Temp)) +
 ```{r ave temp by CRW and all loggers together}
 temp.same %>% 
    group_by(Method, season) %>% 
-   summarize(avetemp = mean(Temp), SDtemp = sd(Temp), SEtemp = sd(Temp)/sqrt(n()))
+   dplyr::summarize(avetemp = mean(Temp), SDtemp = sd(Temp), SEtemp = sd(Temp)/sqrt(n()))
 ```
 
 ## Statistics testing site/depth differences between logger data
@@ -252,8 +256,9 @@ sitedepth.ave
 
 logger %>% 
    group_by(Month, Year) %>% 
-   summarize(ave = mean(Temp), SD = sd(Temp), se = SD/sqrt(n()))
+   dplyr::summarize(ave = mean(Temp), SD = sd(Temp), se = SD/sqrt(n()))
 ```
+
 ```{r ave diff betwen site ave temp 5 vs 10 m}
 sitedepth.diff <- sitedepth.ave %>% 
    select(Site, Depth, ave) %>% 
