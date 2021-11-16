@@ -47,6 +47,8 @@ hrs <- function(u) {
 
 ### Find outliers
 
+Knitting does not work because this chunk requires yes/no response in the console.
+
 ```{r outlier function}
 ## Tukey's outlier code 
 source("http://goo.gl/UUyEzD")
