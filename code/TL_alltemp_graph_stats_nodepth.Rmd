@@ -1,7 +1,7 @@
 ---
-title: "Timoe-Leste 2015-2017 temperature data"
+title: "Timor-Leste 2015-2017 temperature data"
 author: "Catherine Kim"
-date: "September 28, 2021"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 

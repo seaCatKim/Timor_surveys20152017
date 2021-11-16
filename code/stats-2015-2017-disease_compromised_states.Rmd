@@ -1,7 +1,7 @@
 ---
 title: "Statistics on 2015-2017 coral health data from Timor-Leste"
 author: "Catherine Kim"
-date: "`r Sys.time()"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
