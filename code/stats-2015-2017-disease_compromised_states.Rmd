@@ -84,14 +84,15 @@ emmeans(h.lme, list(pairwise ~ Depth), adjust = "tukey")
 ## Disease/Compromised states statistics
 
 ```{r ave total compromised states}
-# overall compromised health average
-# mean(compave$cave)
-# sd(compave$cave)/sqrt(length(compave))
-
 # across site and depth, ave across years
 compd.t %>% 
    mutate(comp = CCA + BL + AllAlgae + TL + OTH) %>% 
    group_by(Site2, Depth) %>% 
+   dplyr::summarize(avecomp = mean(comp), SE = sd(comp)/sqrt(n()))
+
+# overall compromised health average
+compd.t %>% 
+   mutate(comp = CCA + BL + AllAlgae + TL + OTH) %>% 
    dplyr::summarize(avecomp = mean(comp), SE = sd(comp)/sqrt(n()))
 ```
 
