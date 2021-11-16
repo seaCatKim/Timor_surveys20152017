@@ -41,5 +41,8 @@ vignettes/*.pdf
 # knitted htmls
 *.html
 
-# figures directory
+# directories
 figures/
+code_old/
+data/otherdata
+data/rawdata
