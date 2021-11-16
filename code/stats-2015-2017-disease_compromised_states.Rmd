@@ -12,6 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ## read in transect data with 8 categories including diseases white syndrome (WS) and growth anomalies (GAs)
 
 ```{r read in data with growth anomaolies (GAs) separated }
+library(here)
+
 compd.t <- read.csv(here::here('data/comp8GA_tave.csv'))
 head(compd.t)
 ```
@@ -19,25 +21,29 @@ head(compd.t)
 ```{r create unique transect id}
 compd.t$long_id <- as.factor(paste(compd.t$Site2, compd.t$Depth, compd.t$Transect, sep = "_"))
 
-write.csv(levels(compd.t$long_id), here("data/unique_ids.csv"))
-# write levels and add num id
+#write.csv(levels(compd.t$long_id), here("data/unique_ids.csv"))
+
 # read file with num id
-ids <- read.csv(here::here("data/unique_ids_wnum.csv"))
+ids <- read.csv(here::here("data/unique_ids.csv"))
 
 library(dplyr)
-compd.t <- inner_join(compd.t, ids, by = 'long_id') # join unique transect ids
+compd.t <- inner_join(compd.t, ids, by = 'long_id') %>% # join unique transect ids - num_id
+   mutate_if(is.character, as.factor)
    # change num_id an year to factors
+
+# change integers to factors as well
 compd.t$num_id <- as.factor(compd.t$num_id)
 compd.t$Year <- as.factor(compd.t$Year)
 
 levels(compd.t$Site2)
 
-head(compd.t)
+glimpse(compd.t)
 ```
+
 # Healthy coral statistics
 
 ```{r summarize healthy corals}
-mean(compd.t$Healthy) # overall percent healthy coral
+mean(compd.t$Healthy, na.rm = TRUE) # overall percent healthy coral
 sd(compd.t$Healthy)/sqrt(length(compd.t)) # SE healthy coral
 
 library(Rmisc)
@@ -52,6 +58,7 @@ head(comp.hs)
 hist(compd.t$Healthy)
 shapiro.test(compd.t$Healthy)
 
+library(ggpubr)
 ggboxplot(
   compd.t, x = "Site2", y = "Healthy", facet.by = 'Depth',
   color = "Year", palette = "jco"
@@ -65,6 +72,8 @@ h.lme <- lme((Healthy) ~ Year * Site2 *Depth, random = ~1|num_id,
              na.action = na.exclude)
 h.lme
 summary(h.lme)
+
+library(car)
 Anova(h.lme)  
 library(emmeans)
 emmeans(h.lme, list(pairwise ~ Year), adjust = "tukey")
@@ -76,8 +85,8 @@ emmeans(h.lme, list(pairwise ~ Depth), adjust = "tukey")
 
 ```{r ave total compromised states}
 # overall compromised health average
-mean(compave$cave)
-sd(compave$cave)/sqrt(length(compave))
+# mean(compave$cave)
+# sd(compave$cave)/sqrt(length(compave))
 
 # across site and depth, ave across years
 compd.t %>% 
@@ -199,7 +208,7 @@ aa.lme <- lme((AllAlgae) ~ Year * Site2 * Depth, random = ~1|num_id, data = comp
 aa.lme
 summary(aa.lme)
 Anova(aa.lme)  # Year:site interaction
-emmeans(aa.lme, list(pairwise ~ Year:Site), adjust = "tukey")
+emmeans(aa.lme, list(pairwise ~ Year:Site2), adjust = "tukey")
 ```
 
 ```{r ave all algae growth per site}
@@ -214,12 +223,13 @@ alg
 
 ```{r CCCA}
 hist(compd.t$CCA)
+N <- length(compd.t)
 compd.t$slogCCA <- log10((compd.t$CCA * (N-1) + .5)/N)
 hist((compd.t$slogCCA))
 #qqnorm(log10(compd.t$CCA+1))
 qqnorm(sqrt(compd.t$CCA))
 
-leveneTest(sqrt(CCA)~Year*Site*Depth, compd.t) # not significant
+leveneTest(sqrt(CCA)~Year * Site2 * Depth, compd.t) # not significant
 ```
 ```{r cca summary}
 cca.se <- summarySE(compd.t, "CCA", c("Year", "Site"))
@@ -231,13 +241,13 @@ ggboxplot(
 ```
 
 ```{r CCA lmer repeated anova}
-cca.lme <- lme((CCA) ~ Year * Site*Depth, random = ~1|num_id, data = compd.t,
+cca.lme <- lme((CCA) ~ Year * Site2 * Depth, random = ~1|num_id, data = compd.t,
              na.action = na.exclude)
 cca.lme
 summary(cca.lme)
 Anova(cca.lme)  # sig year:site, site:depth interactions
-emmeans(cca.lme, list(pairwise ~ Year:Site), adjust = "tukey")
-emmeans(cca.lme, list(pairwise ~ Site:Depth), adjust = "tukey")
+emmeans(cca.lme, list(pairwise ~ Year:Site2), adjust = "tukey")
+emmeans(cca.lme, list(pairwise ~ Site2:Depth), adjust = "tukey")
 ```
 
 ### Tissue loss (TL) ANOVA
@@ -247,16 +257,16 @@ hist(compd.t$TL)
 #hist(log10(compd.t$TL+1))
 hist(sqrt(compd.t$TL))
 qqnorm(sqrt(compd.t$TL))
-leveneTest((TL)~Year*Site*Depth, compd.t) # not significant
+leveneTest((TL)~Year*Site2*Depth, compd.t) # not significant
 
 ggboxplot(
-  data = compd.t, x = "Site", y = "TL", facet.by = 'Depth',
+  data = compd.t, x = "Site2", y = "TL", facet.by = 'Depth',
   color = "Year", palette = "jco"
   )
 ```
 
 ```{r TL lmer repeated anova}
-tl.lme <- lme((TL) ~ Year * Site*Depth, random = ~1|num_id, 
+tl.lme <- lme((TL) ~ Year * Site2 * Depth, random = ~1|num_id, 
               data = compd.t,
              na.action = na.exclude)
 tl.lme
