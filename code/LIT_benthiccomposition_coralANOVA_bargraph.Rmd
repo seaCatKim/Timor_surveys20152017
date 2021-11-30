@@ -110,12 +110,12 @@ ggplot(bencomp_long,
          panel.grid.major = element_blank(),
          panel.grid.minor = element_blank(),
          panel.background = element_blank(),
-         text = element_text(size = 16)) +
+         text = element_text(size = 12)) +
    scale_fill_discrete_divergingx("Spectral", 
                                   name = "Benthic Category",
                                   labels = c("Turf Algae","Substrate/Sand", "Soft Coral","Macroalgae", "Invertebrates", "CCA", "Hard Coral"))
 
-ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.pdf'),
+ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.jpg'),
        height = 4, width = 7)
 
 ```

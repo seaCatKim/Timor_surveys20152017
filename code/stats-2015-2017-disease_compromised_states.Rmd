@@ -316,11 +316,11 @@ ggplot(ave_compd, aes((Year), avePer,  fill = Category)) +
    labs(x = "", y = "Percent") +
    theme(plot.title = element_text("sans", "bold",
                                    color = "black", 15)) +
-   theme(text = element_text(size = 16)) +
+   theme(text = element_text(size = 14)) +
    theme(axis.ticks.x = element_blank()) + #, panel.background = element_rect("gray85"))+
-   theme(axis.text.x = element_text(hjust = 0.5),
-         legend.title = element_blank())+
+   theme(axis.text.x = element_text(hjust = 0.5))+
    scale_fill_brewer(palette="RdYlBu",
+                     name = "Health State",
                      labels = c("WS", "Other", "TL",
                                 "CCA", "All Algae",
                                 "BL", "Healthy"))
