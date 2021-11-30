@@ -115,7 +115,7 @@ ggplot(bencomp_long,
                                   name = "Benthic Category",
                                   labels = c("Turf Algae","Substrate/Sand", "Soft Coral","Macroalgae", "Invertebrates", "CCA", "Hard Coral"))
 
-ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.jpg'),
-       height = 4, width = 7)
+ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.pdf'),
+       height = 4, width = 7, dpi = 300)
 
 ```
