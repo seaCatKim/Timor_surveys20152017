@@ -98,6 +98,7 @@ bencomp$Depth <- relevel(bencomp$Depth, ref = "5m")
 head(bencomp_long)
 
 library(ggplot2)
+library(colorspace)
 ggplot(bencomp_long, 
        aes(x=Year,y = ave, fill= factor(Major.Category,
                                         levels = c("Turf","Substrate.Sand", "SoftCoral","Macroalgae", "Invert", "CCA", "HardCoral")))) + 
@@ -110,8 +111,10 @@ ggplot(bencomp_long,
          panel.grid.minor = element_blank(),
          panel.background = element_blank(),
          text = element_text(size = 16)) +
-   scale_fill_discrete(name="Benthic Category")
+   scale_fill_discrete(name="Benthic Category") +
+   scale_fill_discrete_divergingx("Spectral", name = "Benthic Category")
 
 ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.pdf'),
        height = 4, width = 7)
+
 ```
