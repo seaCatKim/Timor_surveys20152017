@@ -321,7 +321,7 @@ ggplot(ave_compd, aes((Year), avePer,  fill = Category)) +
    theme(axis.text.x = element_text(hjust = 0.5),
          legend.title = element_blank())+
    scale_fill_brewer(palette="RdYlBu",
-                     labels = c("WS", "OTH", "TL",
+                     labels = c("WS", "Other", "TL",
                                 "CCA", "All Algae",
                                 "BL", "Healthy"))
 
