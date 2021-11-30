@@ -103,7 +103,7 @@ ggplot(bencomp_long,
        aes(x=Year,y = ave, fill= factor(Major.Category,
                                         levels = c("Turf","Substrate.Sand", "SoftCoral","Macroalgae", "Invert", "CCA", "HardCoral")))) + 
    geom_bar( position="stack", stat="identity") +   facet_grid(Depth~Site2,switch = "x") +
-   labs(title = "Benthic Composition", x = "Site and Year", y = "Percent") +
+   labs(x = "Site and Year", y = "Percent") +
    theme_classic() +
    #theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
    theme(panel.border = element_blank(), 
@@ -111,8 +111,9 @@ ggplot(bencomp_long,
          panel.grid.minor = element_blank(),
          panel.background = element_blank(),
          text = element_text(size = 16)) +
-   scale_fill_discrete(name="Benthic Category") +
-   scale_fill_discrete_divergingx("Spectral", name = "Benthic Category")
+   scale_fill_discrete_divergingx("Spectral", 
+                                  name = "Benthic Category",
+                                  labels = c("Turf Algae","Substrate/Sand", "Soft Coral","Macroalgae", "Invertebrates", "CCA", "Hard Coral"))
 
 ggsave(here::here('figures/TL2015-2017_bencomp_bargraph.pdf'),
        height = 4, width = 7)
