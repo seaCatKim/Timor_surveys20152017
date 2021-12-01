@@ -214,17 +214,20 @@ hal %>% #
 
 ```{r Halimeda C to N ratio}
 # CN
+library(car)
 h.cn.mod <- lm(CN ~ Site2*Depth, data = hal, contrasts= list(Site2='contr.sum', Depth = 'contr.sum'))
 plot(h.cn.mod)
 hcn.A <- Anova(h.cn.mod, type = "3")
 hcn.A
 
+library(emmeans)
 pairs(emmeans(h.cn.mod, 'Site2'))
-hcn.marginal = emmeans(h.pn.mod,
+hcn.marginal = emmeans(h.cn.mod,
                    ~ Site2)
 
 pairs(hcn.marginal, adjust="tukey")
 
+library(multcomp)
 cld(hcn.marginal, adjust="tukey", Letters=letters)
 ```
 
