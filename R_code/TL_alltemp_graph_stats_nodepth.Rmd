@@ -8,8 +8,6 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-#Sys.setenv(R_GSCMD = "C:/Program Files/gs/gs9.54.0/bin/gswin64c.exe")
-
 library(tidyverse)
 library(here)
 ```
@@ -66,13 +64,14 @@ temp.same <- temp.same[-which(temp.same$Site == 'CRWTL' & temp.same$Depth == '10
 temp.same$Method <- relevel(temp.same$Method, ref = "sat")
 
 head(temp.same)
+```
 
+```{r crw}
 crw <- temp %>% 
    filter( Site == "CRWTL") %>% 
-   select(Site, m.y, Temp, sd, se)
+   dplyr::select(Site, m.y, Temp, sd, se)
 colnames(crw) <- c("Site", "m.y", "siteave", "SD", "SE")
 crw
-
 ```
 
 ```{r average difference between 5 and 10 m temp loggers}
@@ -125,8 +124,8 @@ ggplot(alltemp, mapping= aes(m.y, siteave, group = Site, color = Site)) +
            alpha = .1,fill = "gray10") +
    annotate("rect", xmin = '11/2016', xmax = '5/2017', ymin = -Inf, ymax = Inf,
            alpha = .1,fill = "gray10")
-  
-#ggsave(here("figures/line_TLtemp.pdf"), width = 7, height = 4)
+
+ggsave(here::here("figures/Fig7_line_TLtemp.jpg"), width = 7, height = 4)
 ```
 
 ## Statistics
@@ -143,9 +142,6 @@ Anova(site.lm)
 library(emmeans)
 emmeans(site.lm, list(pairwise ~ season), adjust = "tukey")
 emmeans(site.lm, list(pairwise ~ Site), adjust = "tukey")
-
-boxplot(Temp~Site, data = temp.same)
-boxplot(Temp~season, data = temp.same)
 ```
 
 ```{r}
@@ -155,9 +151,6 @@ Anova(site.lm2, type = 'III')
 library(emmeans)
 emmeans(site.lm2, list(pairwise ~ season), adjust = "tukey")
 emmeans(site.lm2, list(pairwise ~ Site), adjust = "tukey")
-
-boxplot(Temp~Site, data = temp.same)
-boxplot(Temp~season, data = temp.same)
 ```
 
 ```{r box plot showing method:season interaction}
@@ -192,9 +185,36 @@ emmeans(method.lm, list(pairwise ~ season), adjust = "tukey")
 emmeans(method.lm, list(pairwise ~ Method), adjust = "tukey")
 emmeans(method.lm, list(pairwise ~ Method:season), adjust = "tukey")
 
-boxplot(Temp~Method, data = temp.same)
-boxplot(Temp~season, data = temp.same)
 boxplot(Temp~Method:season, data = temp.same, las = 2)
+
+library(ggeffects)
+plotdat <- method.lm %>% 
+   ggemmeans(~ Method:season) %>% 
+   as.data.frame() 
+
+levels(plotdat$group)
+plotdat$group <- ordered(plotdat$group, 
+                         levels = c("summer", "fall", "winter", "spring"))
+
+ggplot(plotdat, aes(x = group, y = predicted, color = x)) +
+   geom_point() +
+   geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
+                 width = 0.2) +
+   theme_classic() +
+   scale_x_discrete(breaks = c("summer", "fall", "winter", "spring"),
+                    labels = c("Summer", "Fall", "Winter", "Spring")) +
+   scale_color_discrete(name = "Method",
+                        breaks = c("sat", "insitu"),
+                        labels = c("CRWTL", "In Situ")) +
+   xlab("Austral Season") +
+   ylab("Mean Temperature [C]") +
+   geom_hline(yintercept = 29.5,
+              linetype = "dashed",
+              color = "lightblue") +
+   geom_hline(yintercept = 30.5,
+              color = "lightblue")
+
+
 ```
 
 ```{r box plot showing season }
@@ -202,12 +222,22 @@ ggplot(temp.same, aes(season, Temp)) +
    geom_jitter(aes(color = Method)) +
    geom_boxplot(fill = NA) + 
    theme_classic()
+
+ggplot(temp.same, aes(season, Temp, color = Method)) + 
+   geom_point() +
+ #  geom_errorbar(aes(ymin = Temp - ci, ymax = Temp + ci))
+   geom_line(width = 0.2) +
+   theme_classic()
+
+
 ```
 
 ```{r ave temp by CRW and all loggers together}
 temp.same %>% 
    group_by(Method, season) %>% 
-   dplyr::summarize(avetemp = mean(Temp), SDtemp = sd(Temp), SEtemp = sd(Temp)/sqrt(n()))
+   dplyr::summarize(avetemp = mean(Temp), 
+                    SDtemp = sd(Temp), 
+                    SEtemp = sd(Temp)/sqrt(n()))
 ```
 
 ## Statistics testing site/depth differences between logger data
