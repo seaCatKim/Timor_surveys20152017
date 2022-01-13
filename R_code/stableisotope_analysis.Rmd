@@ -47,7 +47,7 @@ hrs <- function(u) {
 
 ### Find outliers
 
-Knitting does not work because this chunk requires yes/no response in the console.
+**Knitting does not work because this chunk requires yes/no response in the console.**
 
 ```{r outlier function}
 ## Tukey's outlier code 
@@ -161,6 +161,7 @@ library(agricolae)
 h.dn.mod <- lm(d15N ~ Site2*Depth, data = hal, contrasts= list(Site2='contr.sum', Depth = 'contr.sum'))
 summary(h.dn.mod)
 plot(h.dn.mod)
+library(car)
 h.A <- Anova(h.dn.mod, type = "3")
 h.A
 ```
@@ -214,20 +215,17 @@ hal %>% #
 
 ```{r Halimeda C to N ratio}
 # CN
-library(car)
 h.cn.mod <- lm(CN ~ Site2*Depth, data = hal, contrasts= list(Site2='contr.sum', Depth = 'contr.sum'))
 plot(h.cn.mod)
 hcn.A <- Anova(h.cn.mod, type = "3")
 hcn.A
 
-library(emmeans)
 pairs(emmeans(h.cn.mod, 'Site2'))
 hcn.marginal = emmeans(h.cn.mod,
                    ~ Site2)
 
 pairs(hcn.marginal, adjust="tukey")
 
-library(multcomp)
 cld(hcn.marginal, adjust="tukey", Letters=letters)
 ```
 
