@@ -161,9 +161,9 @@ ggplot(ACRbracount,
    geom_boxplot() +
    facet_wrap(vars(Site2)) +
    theme_classic() +
-   theme(text = element_text(size = 16))
+   theme(text = element_text(size = 16)) +
+   ylab("Total Branching Acroporids")
 
-# save plot as pdf and jpg
-ggsave(here::here("figures/ACRbra_counts_site_d_yr.pdf"), width = 7, height = 4)
-ggsave(here::here("figures/ACRbra_counts_site_d_yr.jpg"), width = 7, height = 4)
+# save plot as  jpg
+ggsave(here::here("figures/SuppFigA3_ACRbra_counts_site_d_yr.jpg"), width = 7, height = 4)
 ```

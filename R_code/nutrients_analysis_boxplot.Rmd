@@ -103,7 +103,8 @@ b + theme_classic() +
    theme(plot.title = element_text("sans", "bold",color = "black", 30),
          text = element_text(size = 16))
 
-ggsave(here("figures/boxplot_seawater_nutrients.pdf"), height = 6)
+ggsave(here("figures/Fig6_boxplot_seawater_nutrients.jpg"),
+       height = 6)
 ```
 
 ```{r}

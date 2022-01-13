@@ -116,7 +116,7 @@ ggplot(gen.shan.se, aes(Year, shan)) + geom_bar(stat = "identity") +
    theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
    theme(text = element_text(size = 15)) 
    theme( strip.background= element_blank())
-ggsave(here::here("figures/FigA2_shannon_2015-2017.jpg"), height = 5, width = 7)
+ggsave(here::here("figures/SuppFigA2_shannon_2015-2017.jpg"), height = 5, width = 7)
 ```
 
 ```{r shannon glm}
