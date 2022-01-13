@@ -82,7 +82,6 @@ ggplot(gen.sum.se, aes(Year, gen.sum)) + geom_bar(stat = "identity") +
    theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
    theme(text = element_text(size = 15)) 
    theme( strip.background= element_blank())
-ggsave(here::here("figures/genera_2015-2017.jpg"), height = 5, width = 7)
 ```
 
 Genear meaned with SE across survey years.
@@ -102,6 +101,22 @@ shan <- diversity(gen1, "shannon")
 shan <- round(shan,3)
 gen.shan <- cbind(gen[1:5], shan)
 head(gen.shan)
+
+gen.shan.se <- summarySE(gen.shan, "shan", c("Site", "Depth", "Year"))
+```
+
+```{r shannon plot}
+ggplot(gen.shan.se, aes(Year, shan)) + geom_bar(stat = "identity") + 
+   facet_grid(Depth~Site, switch = "x") +
+   geom_errorbar(aes(ymin = shan-se, ymax = shan+se), 
+                 width = 0.2) +
+   ylab("Shannon Index") +
+   theme_classic() +
+      theme(axis.ticks.x = element_blank()) +
+   theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
+   theme(text = element_text(size = 15)) 
+   theme( strip.background= element_blank())
+ggsave(here::here("figures/FigA2_shannon_2015-2017.jpg"), height = 5, width = 7)
 ```
 
 ```{r shannon glm}
