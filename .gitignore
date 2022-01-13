@@ -42,7 +42,7 @@ vignettes/*.pdf
 *.html
 
 # directories
-figures/
+# figures/
 code_old/
 data/otherdata
 data/rawdata
