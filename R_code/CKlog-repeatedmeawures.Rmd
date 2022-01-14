@@ -27,11 +27,9 @@ month_id <- data.frame(m.y = levels(cklogger$m.y), month_id = 1:length(levels(ck
 month_id
 
 head(cklogger)
-cklogger[which(is.na(cklogger$Temp)),]
-cklogger <- cklogger[-which(is.na(cklogger$Temp)),]
-
-filter(cklogger, m.y == '6/2017' & Site == 'Urban-E' & Depth == '10m')
+which(is.na(cklogger$Temp))
 ```
+
 ```{r ck logger monthly ave from daily max sst}
 library(tidyverse)
 log_month <-    cklogger %>% 
@@ -64,21 +62,21 @@ log_month %>%
    group_by(month, year) %>% 
    identify_outliers(aveTemp)
 ```
-few significant p values
+
 ```{r check normality}
-log_crw_month %>% 
+log_month %>% 
    group_by(Site) %>% 
    shapiro_test(aveTemp)
 
-log_crw_month %>% 
+log_month %>% 
    group_by(Depth) %>% 
    shapiro_test(aveTemp)
 
-log_crw_month %>% 
+log_month %>% 
    group_by(Site, Depth) %>% 
    shapiro_test(aveTemp)
 
-log_crw_month %>% 
+log_month %>% 
    group_by(month, year) %>% 
    shapiro_test(aveTemp)
 
@@ -130,7 +128,7 @@ plot(residuals(model.gls))
 
 Random effects structure
 ```{r linear model}
-LM <- lm(aveTemp ~ Site * Depth , data = log_month)
+LM <- lm(aveTemp ~ Site, data = log_month)
 summary(LM)
 plot(LM)
 ```
@@ -178,7 +176,7 @@ ACF(model.b)  #
 ```{r repeated measures with lme with autocorrelation structure}
 model.lme.acor = lme(aveTemp ~ Site , 
                 random = ~1 |log_id,
-                correlation = corAR1(form = ~ 1|log_id, value = 0.5122),
+                correlation = corAR1(form = ~ 1|log_id, value = 0.50826),
                 data = log_month,
                 method = "REML")
 Anova(model.lme.acor)
@@ -204,6 +202,7 @@ grid.arrange(plot(model.lme.acor,type=c("p","smooth")),
                   type=c("p","smooth")),
              qqnorm(model.lme.acor,abline=c(0,1)))
 ```
+
 ```{r anova model w and without autocorrelation}
 anova(model.lme, model.lme.acor)
 
@@ -220,6 +219,9 @@ Sum_sited = groupwiseMean(aveTemp ~ Site * Depth ,
                     digits = 3,
                     traditional = FALSE,
                     percentile  = TRUE)
+
+pd <- position_dodge(0.2)
+
 ggplot(Sum_sited, aes(x =   Site,
                 y =    Mean,
                 color = Depth)) +
@@ -271,21 +273,6 @@ ggplot(Sum_myr, aes(x =   factor(year),
    xlab("Year")
 ```
 
-Multivariate approach with lm
-```{r log data wide with month_id as cols}
-log_month_w <- log_month %>% 
-   pivot_wider(id_cols = Site:log_id, names_from = month_id, values_from = aveTemp)
-
-log_month_w
-
-month_w <- log_month_w[,-c(1:3)]
-str(month_w)
-
-mod <- lm(month_w ~ 1 , data = log_month_w)
-av.mod <- Anova(mod, idata = log_month_w, idesign = ~Site)
-av.mod
-summary(av.mod)
-```
 
 
 
