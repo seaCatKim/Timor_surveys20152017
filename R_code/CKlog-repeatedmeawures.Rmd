@@ -91,16 +91,6 @@ ggqqplot(log_month, "aveTemp", ggtheme = theme_bw()) +
   facet_grid(month ~ year, labeller = "label_both")
 ```
 
-very significant p values...
-```{r homogeneity of variance}
-log_month %>%
-  group_by(month, year) %>%
-  levene_test(aveTemp ~ Site)
-
-log_month %>%
-  group_by(month, year) %>%
-  levene_test(log10(aveTemp) ~ Site)
-```
 ```{r homogeneity of covariance}
 box_m(log_month[, "aveTemp", drop = FALSE], log_month$log_id)
 ```
@@ -272,7 +262,5 @@ ggplot(Sum_myr, aes(x =   factor(year),
     ylab("Mean temperature [C]") +
    xlab("Year")
 ```
-
-
 
 
