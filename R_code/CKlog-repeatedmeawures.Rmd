@@ -1,7 +1,7 @@
 ---
-title: "Temp_repeatedmeasures"
-author: "CKim"
-date: "12/29/2020"
+title: "Temperature logger repeated measures test"
+author: "Catherine Kim"
+date: "1/14/2022"
 output: html_document
 ---
 
@@ -14,7 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 Differences between temperature monthly means between logger sites (n = 3).
 
 ```{r read all ck logger data}
-cklogger <- read.csv("data/allcklogger_temps.csv") #from stats-CKTLTemp-allsitesdepth.rmd
+library(here)
+cklogger <- read.csv(here("data/allcklogger_temps.csv")) #from stats-CKTLTemp-allsitesdepth.rmd
 
 paste(1,2,sep = '/')
 
@@ -251,7 +252,7 @@ ggplot(Sum_myr, aes(x =   factor(month),
    xlab("Month")
 ```
 
-```{r year/month plot}
+```{r year plot}
 Sum_myr = groupwiseMean(aveTemp ~ year ,
                     data   = log_month,
                     conf   = 0.95,
