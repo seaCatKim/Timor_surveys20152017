@@ -1,0 +1,290 @@
+---
+title: "Temp_repeatedmeasures"
+author: "CKim"
+date: "12/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Repeated measures analysis of logger temp data
+
+Differences between temperature monthly means between logger sites (n = 3).
+
+```{r read all ck logger data}
+cklogger <- read.csv("data/allcklogger_temps.csv") #from stats-CKTLTemp-allsitesdepth.rmd
+
+paste(1,2,sep = '/')
+
+cklogger$m.y <- factor(with(cklogger, paste(month, year, sep = '/')))
+levels(cklogger$m.y)
+cklogger$m.y = factor(cklogger$m.y,levels(cklogger$m.y)[c(4,6,1,8,10,12,14,16,18:20,3,5,7,2,9,11,13,15,17)])
+
+month_id <- data.frame(m.y = levels(cklogger$m.y), month_id = 1:length(levels(cklogger$m.y)))
+month_id
+
+head(cklogger)
+cklogger[which(is.na(cklogger$Temp)),]
+cklogger <- cklogger[-which(is.na(cklogger$Temp)),]
+
+filter(cklogger, m.y == '6/2017' & Site == 'Urban-E' & Depth == '10m')
+```
+```{r ck logger monthly ave from daily max sst}
+library(tidyverse)
+log_month <-    cklogger %>% 
+   inner_join(month_id, by = 'm.y') %>% 
+   group_by(Site, Depth, log_id, year, month, day, month_id, m.y) %>% 
+   dplyr::summarize(SST_MAX = max(Temp)) %>% 
+   ungroup() %>% 
+   group_by(Site, Depth, log_id, year, month, month_id, m.y) %>% 
+   dplyr::summarize(aveTemp = mean(SST_MAX), N = n()) %>% 
+   ungroup()
+log_month
+log_month[which(is.na(log_month$aveTemp)),]
+#log_month <- log_month[-which(is.na(log_month$aveTemp)),]
+
+#write.csv(log_month, 'cklogger_monthave.csv', row.names = F)
+```
+Check assumptions
+```{r identify outliers}
+library(rstatix)
+
+log_month %>% 
+   group_by(Site) %>% 
+   identify_outliers(aveTemp)
+
+log_month %>% 
+   group_by(Depth) %>% 
+   identify_outliers(aveTemp)
+
+log_month %>% 
+   group_by(month, year) %>% 
+   identify_outliers(aveTemp)
+```
+few significant p values
+```{r check normality}
+log_crw_month %>% 
+   group_by(Site) %>% 
+   shapiro_test(aveTemp)
+
+log_crw_month %>% 
+   group_by(Depth) %>% 
+   shapiro_test(aveTemp)
+
+log_crw_month %>% 
+   group_by(Site, Depth) %>% 
+   shapiro_test(aveTemp)
+
+log_crw_month %>% 
+   group_by(month, year) %>% 
+   shapiro_test(aveTemp)
+
+```
+
+```{r qqplot}
+library(ggpubr)
+ggqqplot(log_month, "aveTemp", ggtheme = theme_bw()) +
+  facet_grid(Depth ~ Site, labeller = "label_both")
+
+ggqqplot(log_month, "aveTemp", ggtheme = theme_bw()) +
+  facet_grid(month ~ year, labeller = "label_both")
+```
+
+very significant p values...
+```{r homogeneity of variance}
+log_month %>%
+  group_by(month, year) %>%
+  levene_test(aveTemp ~ Site)
+
+log_month %>%
+  group_by(month, year) %>%
+  levene_test(log10(aveTemp) ~ Site)
+```
+```{r homogeneity of covariance}
+box_m(log_month[, "aveTemp", drop = FALSE], log_month$log_id)
+```
+
+repeated measures with gls
+```{r autocorrelation from residuals, gls}
+library(nlme)
+
+model.a = gls(aveTemp ~ Site * Depth + year/month, data = log_month)
+ACF(model.a, form = ~month_id | log_id)  #lag 1 = 0.4877
+```
+
+```{r gls repeated measures}
+model.gls = gls(aveTemp ~ Site * Depth + year/month, 
+                correlation = corAR1(form = ~ month_id|log_id, value = 0.5076),
+                data = log_month,
+                method = "REML")
+
+library(car)
+Anova(model.gls)
+summary(model.gls)
+plot(residuals(model.gls))
+```
+## LME function 
+
+Random effects structure
+```{r linear model}
+LM <- lm(aveTemp ~ Site * Depth , data = log_month)
+summary(LM)
+plot(LM)
+```
+
+```{r repeated measures with lme no autocorrelation month id}
+model.lme = lme(aveTemp ~ Site, 
+                random = ~1 |log_id,
+                data = log_month,
+                method = "REML")
+(Anova(model.lme))
+
+
+plot(ACF(model.lme))
+plot(residuals(model.lme))
+plot(predict(model.lme) ~ log_month$aveTemp)
+
+summary(model.lme)
+```
+
+```{r model diagnostic}
+library(gridExtra)
+grid.arrange(plot(ACF(model.lme),alpha=0.05),
+             plot(ACF(model.lme,resType="normalized"),alpha=0.05),
+             nrow=1)
+
+
+grid.arrange(plot(model.lme,type=c("p","smooth")),
+             plot(model.lme,sqrt(abs(resid(.)))~fitted(.),
+                                 type=c("p","smooth"),ylab=expression(sqrt(abs(resid)))),
+                                       ## "sqrt(abs(resid(x)))"),
+             plot(model.lme,resid(.,type="pearson")~month_id,
+                  type=c("p","smooth")),
+             qqnorm(model.lme,abline=c(0,1)))
+```
+
+
+```{r determining autocorrelation with lme}
+model.b = lme(aveTemp~ Site , 
+              random = ~1 |log_id, 
+              data = log_month)
+ACF(model.b)  #
+```
+# in paper
+
+```{r repeated measures with lme with autocorrelation structure}
+model.lme.acor = lme(aveTemp ~ Site , 
+                random = ~1 |log_id,
+                correlation = corAR1(form = ~ 1|log_id, value = 0.5122),
+                data = log_month,
+                method = "REML")
+Anova(model.lme.acor)
+
+plot(ACF(model.lme.acor))
+grid.arrange(plot(ACF(model.lme.acor),alpha=0.05),
+             plot(ACF(model.lme.acor,resType="normalized"),alpha=0.05),
+             nrow=1)
+plot(residuals(model.lme.acor))
+plot(predict(model.lme.acor) ~ log_month$aveTemp)
+```
+
+diagnostic plots from 
+http://bbolker.github.io/mixedmodels-misc/ecostats_chap.html#gopher-tortoise
+```{r autocorrelation diagnostic}
+grid.arrange(plot(ACF(model.lme.acor),alpha=0.05),
+             plot(ACF(model.lme.acor,resType="normalized"),alpha=0.05),  nrow=1)
+
+grid.arrange(plot(model.lme.acor,type=c("p","smooth")),
+             plot(model.lme.acor,sqrt(abs(resid(.)))~fitted(.),
+             type=c("p","smooth"),ylab=expression(sqrt(abs(resid)))),                                     
+   plot(model.lme.acor,resid(.,type="pearson")~month_id,
+                  type=c("p","smooth")),
+             qqnorm(model.lme.acor,abline=c(0,1)))
+```
+```{r anova model w and without autocorrelation}
+anova(model.lme, model.lme.acor)
+
+summary(model.lme)
+summary(model.lme.acor)
+```
+plots
+```{r site depth}
+library(rcompanion)
+
+Sum_sited = groupwiseMean(aveTemp ~ Site * Depth ,
+                    data   = log_month,
+                    conf   = 0.95,
+                    digits = 3,
+                    traditional = FALSE,
+                    percentile  = TRUE)
+ggplot(Sum_sited, aes(x =   Site,
+                y =    Mean,
+                color = Depth)) +
+    geom_errorbar(aes(ymin=Percentile.lower,
+                      ymax=Percentile.upper),
+                   width=.2, size=0.7, position=pd) +
+    geom_point(shape=15, size=4, position=pd) +
+    theme_bw() +
+    theme(axis.title = element_text(face = "bold")) +
+    ylab("Mean temperature")
+```
+
+```{r year/month plot}
+Sum_myr = groupwiseMean(aveTemp ~ month/year ,
+                    data   = log_month,
+                    conf   = 0.95,
+                    digits = 3,
+                    traditional = FALSE,
+                    percentile  = TRUE)
+ggplot(Sum_myr, aes(x =   factor(month),
+                y =    Mean,
+                color = factor(year))) +
+    geom_errorbar(aes(ymin=Percentile.lower,
+                      ymax=Percentile.upper),
+                   width=.2, size=0.7, position=pd) +
+    geom_point(shape=15, size=4, position=pd) +
+    theme_classic() +
+    theme(axis.title = element_text(face = "bold")) +
+    ylab("Mean temperature [C]") +
+   xlab("Month")
+```
+
+```{r year/month plot}
+Sum_myr = groupwiseMean(aveTemp ~ year ,
+                    data   = log_month,
+                    conf   = 0.95,
+                    digits = 3,
+                    traditional = FALSE,
+                    percentile  = TRUE)
+ggplot(Sum_myr, aes(x =   factor(year),
+                y =    Mean)) +
+    geom_errorbar(aes(ymin=Percentile.lower,
+                      ymax=Percentile.upper),
+                   width=.2, size=0.7, position=pd) +
+    geom_point(shape=15, size=4, position=pd) +
+    theme_classic() +
+    theme(axis.title = element_text(face = "bold")) +
+    ylab("Mean temperature [C]") +
+   xlab("Year")
+```
+
+Multivariate approach with lm
+```{r log data wide with month_id as cols}
+log_month_w <- log_month %>% 
+   pivot_wider(id_cols = Site:log_id, names_from = month_id, values_from = aveTemp)
+
+log_month_w
+
+month_w <- log_month_w[,-c(1:3)]
+str(month_w)
+
+mod <- lm(month_w ~ 1 , data = log_month_w)
+av.mod <- Anova(mod, idata = log_month_w, idesign = ~Site)
+av.mod
+summary(av.mod)
+```
+
+
+

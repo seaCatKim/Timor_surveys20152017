@@ -1,0 +1,298 @@
+---
+title: "autocorrelation parameters Timor temp data"
+author: "CKim"
+date: "05/01/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Testing models for coARMA autocorrelation structures for mixed effects model
+
+After discussion with Simone Blomberg
+
+need to:
+1. AIRMA model of temp data changing AR, diff, and MA values - up to 10
+   see p 144 of Cowpertwait
+   determine best autoregressive orders for ANOVA of temperature data
+
+```{r read in monthly ave temp data, loggers and satellite}
+library(tidyverse)
+log_crw_month <- read_csv('data/combined_log_crw_monthttemp.csv') 
+
+str(log_crw_month)
+
+# model error if factor
+log_crw_month$year <- as.factor(log_crw_month$year)
+#log_crw_month$month <- as.factor(log_crw_month$month)
+
+log_crw_month$season <- as.factor(log_crw_month$season)
+log_crw_month$Method <- as.factor(log_crw_month$Method)
+```
+```{r filter out time series per logger}
+log1 <- (log_crw_month[which(log_crw_month$log_id == 1),])
+log2 <- log_crw_month[which(log_crw_month$log_id == 2),]
+log3_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 3)])
+log4_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 4)])
+log5_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 5)])
+log6_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 6)])
+log7_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 7)])
+
+log1_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 1)])
+log2_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 2)])
+log3_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 3)])
+log4_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 4)])
+log5_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 5)])
+log6_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 6)])
+log7_tstemp <- as.ts(log_crw_month$aveTemp[which(log_crw_month$log_id == 7)])
+```
+
+no upward trend so diff not necessary?
+```{r plot diffs of logger 1}
+plot(log1_tstemp)
+plot(diff(log1_tstemp))
+plot(diff(log1_tstemp, lag = 2))
+plot(diff(log1_tstemp, lag = 3))
+plot(diff(log1_tstemp, lag = 4))
+plot(diff(log1_tstemp, lag = 5))
+plot(diff(log1_tstemp, lag = 6))
+plot(diff(log1_tstemp, lag = 7))
+plot(diff(log1_tstemp, lag = 8))
+plot(diff(log1_tstemp, lag = 9))
+plot(diff(log1_tstemp, lag = 10))
+plot(diff(log1_tstemp, lag = 11))
+plot(diff(log1_tstemp, lag = 12))
+```
+
+```{r matrix of log ts}
+# matrix of ts temps
+log_mat <- cbind(log1_tstemp, log2_tstemp, log3_tstemp, log4_tstemp, log5_tstemp, log6_tstemp, log7_tstemp)
+str(log_mat)
+log_mat <- as.matrix(log_mat)
+
+diff(log_mat, lag = 1)
+```
+
+
+## Test arima model
+
+```{r test arima model, echo=FALSE}
+AIC(arima(log1_tstemp, order = c(8,0,0),
+          seasonal = list(order = c(8,0,0), 12)))
+
+AIC(arima(log1_tstemp, order = c(0,0,10),
+          seasonal = list(order = c(0,0,10), 12)))
+
+```
+
+```{r call get best arima function}
+source('functions/get_best_arima.R')
+```
+
+```{r log1 run best arima function, warning = F}
+log1_best_arima <- get.best.arima(log1_tstemp, maxord = c(6,0,6,6,0,6))
+log1_best_arima
+
+log1_best_arimad0 <- get.best.arima.d0(log1_tstemp, maxord = c(6,6,6,6))
+log1_best_arimad0
+```
+
+```{r log6 run best arima function, include = F}
+log1_best_arima <- get.best.arima.d0(log1_tstemp, maxord = c(6,6,6,6))
+log2_best_arima <- get.best.arima.d0(log2_tstemp, maxord = c(6,6,6,6))
+log3_best_arima <- get.best.arima.d0(log3_tstemp, maxord = c(6,6,6,6))
+log4_best_arima <- get.best.arima.d0(log4_tstemp, maxord = c(6,6,6,6))
+log5_best_arima <- get.best.arima.d0(log5_tstemp, maxord = c(5,5,5,5))
+log6_best_arima <- get.best.arima.d0(log6_tstemp, maxord = c(5,5,5,5))
+log7_best_arima <- get.best.arima.d0(log7_tstemp, maxord = c(6,6,6,6))
+```
+
+```{r log7 run best arima function}
+log1_best_arima[[3]]
+log2_best_arima[[3]]
+log3_best_arima[[3]]
+log4_best_arima[[3]]
+log5_best_arima[[3]]
+log6_best_arima[[3]]
+log7_best_arima[[3]]
+```
+
+best p - 2
+best q - 0 or 2
+diff = 0
+
+not necessary to diff the time series
+
+
+```{r repeated measures with lme and coARMA autocorrelation, p = 1, q = 0}
+library(nlme)
+model.lme.ARMA = lme(aveTemp ~ season * Method , 
+                random = ~ 1 | log_id,
+               correlation = corARMA(form = ~ month_id|log_id, 
+                                    p =1,
+                                    q =1),
+                data = log_crw_month,
+                method = "REML")
+Anova(model.lme.ARMA, type = 'II')
+AIC(model.lme.ARMA)
+summary(model.lme.ARMA)
+library(car)
+
+plot((model.lme.ARMA))
+
+emmeans(model.lme.ARMA, list(pairwise ~ season:Method))
+```
+```{r update ARMA and compare AIC}
+
+AIC(model.lme.ARMA)
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 2, q = 0)))
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 3, q = 0)))
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 4, q = 0)))
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 5, q = 0)))
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 6, q = 0)))
+
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 1, q = 1)))
+#AIC(update(model.lme.ARMA, correlation = corARMA(p = 2, q = 1)))
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 3, q = 1))) 
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 4, q = 1)))
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 5, q = 1))) ##
+#AIC(update(model.lme.ARMA, correlation = corARMA(p = 6, q = 1))) #
+
+AIC(model.lme.ARMA)
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 2, q = 2)))
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 3, q = 2)))
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 4, q = 2))) 
+#AIC(update(model.lme.ARMA, correlation = corARMA(p = 5, q = 2))) #
+#AIC(update(model.lme.ARMA, correlation = corARMA(p = 6, q = 2)))
+
+AIC(model.lme.ARMA)
+#AIC(update(model.lme.ARMA, correlation = corARMA(p = 2, q = 3)))
+AIC(update(model.lme.ARMA, correlation = corARMA(p = 3, q = 3)))
+#AIC(update(model.lme.ARMA, correlation = corARMA(p = 4, q = 3)))
+#AIC(update(model.lme.ARMA, correlation = corARMA(p = 5, q = 3)))
+#AIC(update(model.lme.ARMA, correlation = corARMA(p = 6, q = 3)))
+```
+
+```{r 'ARMA with p = 3, q = 1'}
+ARMA.31 <- lme(aveTemp ~ season * Method , 
+                random = ~ 1 | log_id,
+               correlation = corARMA(form = ~ month_id|log_id, 
+                                    p =3,
+                                    q =1),
+                data = log_crw_month,
+                method = "REML")
+   update(model.lme.ARMA, correlation = corARMA(p = 3, q = 1))
+AIC(ARMA.31)
+
+summary(ARMA.31)
+Anova(ARMA.31)
+
+plot(ARMA.31)
+
+emmeans(ARMA.31, list(pairwise ~ season:Method))
+```
+
+```{r autocorrelation model diagnostics 3, 1}
+library(gridExtra)
+grid.arrange(plot(ARMA.31, type=c("p","smooth")),
+             plot(ARMA.31, sqrt(abs(resid(.)))~fitted(.),
+                                 type=c("p","smooth"),ylab=expression(sqrt(abs(resid)))),
+                                       ## "sqrt(abs(resid(x)))"),
+         plot(ARMA.32, resid(.,type="pearson")~month_id,
+                  type=c("p","smooth")),
+         qqnorm(ARMA.32,abline=c(0,1)))
+```
+```{r autocorrelation diagnostic, 3,1}
+grid.arrange(plot(ACF(ARMA.31),alpha=0.05),
+             plot(ACF(ARMA.31,resType="normalized"),alpha=0.05),
+             nrow=1)
+
+acf(resid(ARMA.31))
+pacf(resid(ARMA.31))
+```
+
+# in paper
+```{r 'ARMA with p = 3, q = 0'}
+ARMA.30 <- update(model.lme.ARMA, correlation = corARMA(p = 3, q = 0))
+AIC(ARMA.30)
+
+summary(ARMA.30)
+Anova(ARMA.30)
+
+plot(ARMA.30)
+
+anova(ARMA.30, ARMA.31)
+```
+
+```{r autocorrelation model diagnostics 3, 0}
+library(gridExtra)
+grid.arrange(plot(ARMA.30, type=c("p","smooth")),
+             plot(ARMA.30, sqrt(abs(resid(.)))~fitted(.),
+                                 type=c("p","smooth"),ylab=expression(sqrt(abs(resid)))),
+                                       ## "sqrt(abs(resid(x)))"),
+         plot(ARMA.30, resid(.,type="pearson")~month_id,
+                  type=c("p","smooth")),
+         qqnorm(ARMA.30,abline=c(0,1)))
+```
+
+```{r autocorrelation diagnostic p3 q0}
+grid.arrange(plot(ACF(ARMA.30),alpha=0.05),
+             plot(ACF(ARMA.30,resType="normalized"),alpha=0.05),
+             nrow=1)
+
+acf(resid(ARMA.30))
+pacf(resid(ARMA.30))
+
+```
+
+```{r ave temp by season and method}
+library(emmeans)
+pairs(emmeans(ARMA.30, ~ season * Method))
+
+boxplot(aveTemp~season:Method, data = log_crw_month, las = 2)
+boxplot(aveTemp~month_id, data = log_crw_month)
+
+log_crw_month %>% 
+   group_by(season, Method) %>% 
+   dplyr::summarize(ave = mean(aveTemp), SD = sd(aveTemp), SE = SD/sqrt(n()))
+
+library(lsmeans)
+lsmeans(ARMA.30, pairwise ~ season * Method, adjust = 'tukey')
+
+```
+
+```{r season x method inteaction plot}
+#log_crw_month$Method <- relevel(log_crw_month$Method, ref = 'CRWTL')
+
+# reorder seasons
+levels(log_crw_month$season)
+log_crw_month$season <- factor(log_crw_month$season, levels = levels(log_crw_month$season)[c(3,1,4,2)])
+
+Sum_both = groupwiseMean(aveTemp ~ season * Method ,
+                    data   = log_crw_month,
+                    conf   = 0.95,
+                    digits = 3,
+                    traditional = FALSE,
+                    percentile  = TRUE)
+Sum_both
+
+ggplot(Sum_both, aes(x =   season,
+                y =    Mean,
+                color = Method)) +
+    geom_errorbar(aes(ymin=Percentile.lower,
+                      ymax=Percentile.upper),
+                   width=.2, size=0.7) +
+    geom_point(shape=15, size=4) +
+    theme_classic() +
+    theme(axis.text = element_text(size = 12),
+          axis.title = element_text(size = 12)) +
+    ylab("Mean temperature [C]") + xlab('Austral Season') +
+    geom_hline(yintercept = 29.5, color = 'light blue', linetype = 2) +
+    geom_hline(yintercept = 30.5, color = 'light blue') 
+
+ggsave('figures/Fig7_anova_season-method_plot.jpg', width = 7, height = 4)
+```
