@@ -42,7 +42,7 @@ log_month <-    cklogger %>%
    ungroup()
 log_month
 log_month[which(is.na(log_month$aveTemp)),]
-#log_month <- log_month[-which(is.na(log_month$aveTemp)),]
+log_month <- log_month[-which(is.na(log_month$aveTemp)),]
 
 #write.csv(log_month, 'cklogger_monthave.csv', row.names = F)
 ```
