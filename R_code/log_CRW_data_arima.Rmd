@@ -22,7 +22,8 @@ need to:
 
 ```{r read in monthly ave temp data, loggers and satellite}
 library(tidyverse)
-log_crw_month <- read_csv('data/combined_log_crw_monthttemp.csv') 
+library(here)
+log_crw_month <- read_csv(here('data/combined_log_crw_monthttemp.csv') )
 
 str(log_crw_month)
 
@@ -90,7 +91,7 @@ AIC(arima(log1_tstemp, order = c(0,0,10),
 ```
 
 ```{r call get best arima function}
-source('functions/get_best_arima.R')
+source(here('functions/get_best_arima.R'))
 ```
 
 ```{r log1 run best arima function, warning = F}
@@ -137,13 +138,14 @@ model.lme.ARMA = lme(aveTemp ~ season * Method ,
                                     q =1),
                 data = log_crw_month,
                 method = "REML")
+library(car)
 Anova(model.lme.ARMA, type = 'II')
 AIC(model.lme.ARMA)
 summary(model.lme.ARMA)
-library(car)
 
 plot((model.lme.ARMA))
 
+library(emmeans)
 emmeans(model.lme.ARMA, list(pairwise ~ season:Method))
 ```
 ```{r update ARMA and compare AIC}
@@ -202,9 +204,9 @@ grid.arrange(plot(ARMA.31, type=c("p","smooth")),
              plot(ARMA.31, sqrt(abs(resid(.)))~fitted(.),
                                  type=c("p","smooth"),ylab=expression(sqrt(abs(resid)))),
                                        ## "sqrt(abs(resid(x)))"),
-         plot(ARMA.32, resid(.,type="pearson")~month_id,
+         plot(ARMA.31, resid(.,type="pearson")~month_id,
                   type=c("p","smooth")),
-         qqnorm(ARMA.32,abline=c(0,1)))
+         qqnorm(ARMA.31,abline=c(0,1)))
 ```
 ```{r autocorrelation diagnostic, 3,1}
 grid.arrange(plot(ACF(ARMA.31),alpha=0.05),
@@ -272,6 +274,7 @@ lsmeans(ARMA.30, pairwise ~ season * Method, adjust = 'tukey')
 levels(log_crw_month$season)
 log_crw_month$season <- factor(log_crw_month$season, levels = levels(log_crw_month$season)[c(3,1,4,2)])
 
+library(rcompanion)
 Sum_both = groupwiseMean(aveTemp ~ season * Method ,
                     data   = log_crw_month,
                     conf   = 0.95,
@@ -294,5 +297,5 @@ ggplot(Sum_both, aes(x =   season,
     geom_hline(yintercept = 29.5, color = 'light blue', linetype = 2) +
     geom_hline(yintercept = 30.5, color = 'light blue') 
 
-ggsave('figures/Fig7_anova_season-method_plot.jpg', width = 7, height = 4)
+ggsave(here('figures/Fig7_anova_season-method_plot.jpg'), width = 7, height = 4)
 ```
