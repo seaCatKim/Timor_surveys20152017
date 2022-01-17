@@ -3,7 +3,6 @@ title: "autocorrelation parameters Timor temp data"
 author: "CKim"
 date: "05/01/2021"
 output:
-  pdf_document: default
   html_document: default
 ---
 
