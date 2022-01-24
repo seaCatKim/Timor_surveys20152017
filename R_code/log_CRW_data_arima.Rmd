@@ -81,11 +81,12 @@ diff(log_mat, lag = 1)
 ## Test arima model
 
 ```{r test arima model, echo=FALSE}
-AIC(arima(log1_tstemp, order = c(8,0,0),
-          seasonal = list(order = c(8,0,0), 12)))
-
-AIC(arima(log1_tstemp, order = c(0,0,10),
-          seasonal = list(order = c(0,0,10), 12)))
+# below not working
+# AIC(arima(log1_tstemp, order = c(8,0,0),
+#           seasonal = list(order = c(8,0,0), 12)))
+# 
+# AIC(arima(log1_tstemp, order = c(0,0,10),
+#           seasonal = list(order = c(0,0,10), 12)))
 
 ```
 
@@ -207,6 +208,7 @@ grid.arrange(plot(ARMA.31, type=c("p","smooth")),
                   type=c("p","smooth")),
          qqnorm(ARMA.31,abline=c(0,1)))
 ```
+
 ```{r autocorrelation diagnostic, 3,1}
 grid.arrange(plot(ACF(ARMA.31),alpha=0.05),
              plot(ACF(ARMA.31,resType="normalized"),alpha=0.05),
