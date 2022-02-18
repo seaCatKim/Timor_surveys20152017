@@ -199,7 +199,7 @@ plotdat$group <- ordered(plotdat$group,
 ggplot(plotdat, aes(x = group, y = predicted, color = x)) +
       geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
                  width = 0.2, size = 1) +
-   geom_point(shape = 15, size = 5) +
+   geom_point(shape = 15, size = 3) +
    theme_classic() +
    scale_x_discrete(breaks = c("summer", "fall", "winter", "spring"),
                     labels = c("Summer", "Fall", "Winter", "Spring")) +
