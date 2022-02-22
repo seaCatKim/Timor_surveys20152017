@@ -46,3 +46,4 @@ vignettes/*.pdf
 code_old/
 data/otherdata
 data/rawdata
+data_old/
