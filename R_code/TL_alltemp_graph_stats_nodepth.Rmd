@@ -214,7 +214,7 @@ ggplot(plotdat, aes(x = group, y = predicted, color = x)) +
    geom_hline(yintercept = 30.5,
               color = "lightblue")
 
-ggsave(here::here("figures/Fig8_seasonmethd.jpg"), height = 4, width = 7, dpi = 300)
+ggsave(here::here("figures/Fig8_seasonmethod.jpg"), height = 4, width = 7, dpi = 300)
 ```
 
 ```{r box plot showing season }
