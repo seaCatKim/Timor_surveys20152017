@@ -112,13 +112,13 @@ ggplot(alltemp, mapping= aes(m.y, siteave, group = Site, color = Site)) +
    geom_line()+
    geom_ribbon(aes(m.y, siteave, ymax= siteave+(SE), ymin= siteave-(SE), fill = Site),
                alpha = 0.4) + 
-   scale_color_manual( values = cbPalette) +
-   scale_fill_manual(values = cbPalette) +
+   scale_color_manual( values = cbPalette, name = "Site/Method") +
+   scale_fill_manual(values = cbPalette, name = "Site/Method") +
    theme_classic() +
- #  ggtitle("Coral Reef Watch - In Situ Temperature Monthly Mean + SE") +
    xlab("Month/Year") + ylab("Temperature [C]") +
-   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
-      geom_hline(yintercept = 29.5, color = "light blue", linetype = 2) +
+   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+         text = element_text(size = 16)) +
+   geom_hline(yintercept = 29.5, color = "light blue", linetype = 2) +
    geom_hline(yintercept = 30.5, color = "light blue")  +
    annotate("rect", xmin = '11/2015', xmax = '5/2016', ymin = -Inf, ymax = Inf,
            alpha = .1,fill = "gray10") +
@@ -201,6 +201,7 @@ ggplot(plotdat, aes(x = group, y = predicted, color = x)) +
                  width = 0.2, size = 1) +
    geom_point(shape = 15, size = 3) +
    theme_classic() +
+   theme(text = element_text(size = 16)) +
    scale_x_discrete(breaks = c("summer", "fall", "winter", "spring"),
                     labels = c("Summer", "Fall", "Winter", "Spring")) +
    scale_color_discrete(name = "Method",
@@ -214,7 +215,8 @@ ggplot(plotdat, aes(x = group, y = predicted, color = x)) +
    geom_hline(yintercept = 30.5,
               color = "lightblue")
 
-ggsave(here::here("figures/Fig8_seasonmethod.jpg"), height = 4, width = 7, dpi = 300)
+ggsave(here::here("figures/Fig8_seasonmethod.jpg"), 
+       height = 4, width = 7, dpi = 300)
 ```
 
 ```{r box plot showing season }
