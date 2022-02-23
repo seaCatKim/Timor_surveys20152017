@@ -117,7 +117,7 @@ ggplot(alltemp, mapping= aes(m.y, siteave, group = Site, color = Site)) +
    theme_classic() +
    xlab("Month/Year") + ylab("Temperature [C]") +
    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
-         text = element_text(size = 16)) +
+         text = element_text(size = 14)) +
    geom_hline(yintercept = 29.5, color = "light blue", linetype = 2) +
    geom_hline(yintercept = 30.5, color = "light blue")  +
    annotate("rect", xmin = '11/2015', xmax = '5/2016', ymin = -Inf, ymax = Inf,
@@ -201,14 +201,14 @@ ggplot(plotdat, aes(x = group, y = predicted, color = x)) +
                  width = 0.2, size = 1) +
    geom_point(shape = 15, size = 3) +
    theme_classic() +
-   theme(text = element_text(size = 16)) +
+   theme(text = element_text(size = 14)) +
    scale_x_discrete(breaks = c("summer", "fall", "winter", "spring"),
                     labels = c("Summer", "Fall", "Winter", "Spring")) +
    scale_color_discrete(name = "Method",
                         breaks = c("sat", "insitu"),
                         labels = c("CRWTL", "In Situ")) +
    xlab("Austral Season") +
-   ylab("Mean Temperature [C]") +
+   ylab("Temperature [C]") +
    geom_hline(yintercept = 29.5,
               linetype = "dashed",
               color = "lightblue") +
