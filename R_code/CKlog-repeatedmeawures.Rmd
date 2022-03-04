@@ -208,7 +208,7 @@ summary(model.lme.acor)
 ### plots
 
 ```{r site depth}
-library(rcompanion)
+library(rcompanion) # requires R v >= 4.1.0
 
 Sum_sited = groupwiseMean(aveTemp ~ Site * Depth ,
                     data   = log_month,
