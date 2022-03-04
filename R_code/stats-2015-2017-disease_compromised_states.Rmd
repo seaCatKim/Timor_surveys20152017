@@ -325,5 +325,5 @@ ggplot(ave_compd, aes((Year), avePer,  fill = Category)) +
                                 "CCA", "All Algae",
                                 "BL", "Healthy"))
 
-ggsave(here::here('figures/Fig4_stacked-comphealth-20152017-nodepth.jpg'), width = 7, height = 4,dpi = 300)
+ggsave(here::here('figures/Fig5_stacked-comphealth-20152017-nodepth.jpg'), width = 7, height = 4,dpi = 300)
 ```
