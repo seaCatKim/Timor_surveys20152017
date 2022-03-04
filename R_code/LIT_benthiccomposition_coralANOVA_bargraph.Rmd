@@ -1,7 +1,7 @@
 ---
 title: "Repeated measures anova of hard coral from benthic composition"
 author: "Catherine Kim"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "March 4th 2022"
 output: html_document
 ---
 
@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Statistics on benthic composition from 15m Line Intercept Transects (LIT) in Timor-Leste from 2015 and 2017
+Statistics on benthic composition from 15m Line Intercept Transects (LIT) in Timor-Leste from 2015 and 2017
 
 ```{r Read in data from 15 m line intercept transects, warning=FALSE}
 library(here)

@@ -1,7 +1,7 @@
 ---
 title: "autocorrelation parameters Timor temp data"
 author: "CKim"
-date: "05/01/2021"
+date: "March 4th 2022"
 output:
   html_document: default
 ---

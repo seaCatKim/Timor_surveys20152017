@@ -1,7 +1,7 @@
 ---
 title: "Timor-Leste 2015-2017 temperature data"
 author: "Catherine Kim"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "March 4th 2022"
 output: html_document
 ---
 
@@ -12,7 +12,7 @@ library(tidyverse)
 library(here)
 ```
 
-## Timor-Leste in situ and satellite temperature data from Nov 2015 to Jul 2017
+Timor-Leste in situ and satellite temperature data from Nov 2015 to Jul 2017
 
 Monthly average of daily maximum temperature
 

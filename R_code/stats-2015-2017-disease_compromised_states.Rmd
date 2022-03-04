@@ -1,7 +1,7 @@
 ---
 title: "Statistics on 2015-2017 coral health data from Timor-Leste"
 author: "Catherine Kim"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "March 4th 2022"
 output: html_document
 ---
 
@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## read in transect data with 8 categories including diseases white syndrome (WS) and growth anomalies (GAs)
+Read in transect data with 8 categories including diseases white syndrome (WS) and growth anomalies (GAs)
 
 ```{r read in data with growth anomaolies (GAs) separated }
 library(here)
