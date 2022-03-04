@@ -46,7 +46,9 @@ log_month <- log_month[-which(is.na(log_month$aveTemp)),]
 
 #write.csv(log_month, 'cklogger_monthave.csv', row.names = F)
 ```
+
 Check assumptions
+
 ```{r identify outliers}
 library(rstatix)
 
@@ -96,6 +98,7 @@ box_m(log_month[, "aveTemp", drop = FALSE], log_month$log_id)
 ```
 
 repeated measures with gls
+
 ```{r autocorrelation from residuals, gls}
 library(nlme)
 
@@ -114,6 +117,7 @@ Anova(model.gls)
 summary(model.gls)
 plot(residuals(model.gls))
 ```
+
 ## LME function 
 
 Random effects structure
@@ -161,7 +165,8 @@ model.b = lme(aveTemp~ Site ,
               data = log_month)
 ACF(model.b)  #
 ```
-# in paper
+
+# in paper ----
 
 ```{r repeated measures with lme with autocorrelation structure}
 model.lme.acor = lme(aveTemp ~ Site , 
@@ -199,7 +204,8 @@ anova(model.lme, model.lme.acor)
 summary(model.lme)
 summary(model.lme.acor)
 ```
-plots
+
+### plots
 
 ```{r site depth}
 library(rcompanion)
