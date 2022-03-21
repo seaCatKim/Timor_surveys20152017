@@ -162,7 +162,10 @@ ggplot(ACRbracount,
    facet_wrap(vars(Site2)) +
    theme_classic() +
    theme(text = element_text(size = 16)) +
-   ylab("Total Branching Acroporids")
+   ylab("Total Branching Acroporids") +
+   scale_fill_manual(values = c("#F8766D", "#00BFC4"),
+                     breaks = c("5m", "10m"),
+                     labels = c("5 m", "10 m"))
 
 # save plot as  jpg
 ggsave(here::here("figures/SuppFigA3_ACRbra_counts_site_d_yr.jpg"), width = 7, height = 4)
