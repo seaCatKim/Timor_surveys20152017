@@ -14,7 +14,7 @@ Read in coral health survey data from 2015 and 2017 and combine into one data fr
 ```{r read in data, include=TRUE}
 library(here) # to use relative file paths to read in data
 library(readr)
-comp1517 <- read_csv(here("data/CoralHealth-2015-2017-genmorph.csv")) 
+comp1517 <- read_csv(here::here("data/CoralHealth-2015-2017-genmorph.csv")) 
 
 library(dplyr)
 comp1517_factor <- comp1517 %>%  mutate(across(where(is.character),as.factor))
