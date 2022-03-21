@@ -30,7 +30,7 @@ Reading in seawater nutrient data from flow injection analysis:
 here::i_am("R_code/nutrients_analysis_boxplot.Rmd")
 library(here)
 here::here()
-nu_dat <- read_csv(here::here("data/FIA-1-R-allreps-T24.csv")) %>% 
+nu_dat <- read.csv(here::here("data/FIA-1-R-allreps-T24.csv")) %>% 
    mutate_if(is.character, as.factor)
 nu_dat$Transect <- as.factor(nu_dat$Transect)  
 nu_dat$Depth <- relevel(nu_dat$Depth, ref = "5m")
@@ -46,8 +46,9 @@ nrow(nu_dat)
 
 ```{r tidy up the data}
 # data to wide
-nu_w <- reshape(nu_dat, timevar = "Nutrient..uM.", idvar = c("Sample.ID", "Site2", "Site",
-                                                           "Depth", "Transect", "Rep", "Location"), direction = "wide")
+nu_w <- reshape(nu_dat, timevar = "Nutrient..uM.", 
+                idvar = c("Sample.ID", "Site2", "Site", "Depth", "Transect",
+                          "Rep", "Location"), direction = "wide")
 head(nu_w)
 which(is.na(nu_w))
 
@@ -89,6 +90,7 @@ nuw_ave
 ```{r boxplot of nutrients}
 nu_plot <- nu_w
 nu_plot$`NO3+NO2` <- nu_w$NN
+colPal <- c("#F8766D", "#00BFC4")
 
 b<- nu_plot %>% 
    dplyr::select(-NN, -NO3, -NO2) %>%  # remove redundant columns 
@@ -99,13 +101,16 @@ ggplot(aes(x = Site2, y = Concentration, fill = Depth)) +
    geom_boxplot() + 
    geom_jitter(shape = 1, color="black", size=1, alpha=0.9) +
    facet_grid(Nutrient~., scales = "free_y")  +
-   labs(x = "Site", y = "Concentration [uM]")
+   labs(x = "Site", y = "Concentration [uM]") +
+   scale_fill_manual(values = c("#F8766D", "#00BFC4"),
+                     breaks = c("5m", "10m"),
+                     labels = c("5 m", "10 m"))
 
 b + theme_classic() +
    theme(plot.title = element_text("sans", "bold",color = "black", 30),
          text = element_text(size = 16))
 
-ggsave(here("figures/Fig6_boxplot_seawater_nutrients.jpg"),
+ggsave(here::here("figures/Fig6_boxplot_seawater_nutrients.jpg"),
        height = 6)
 ```
 
