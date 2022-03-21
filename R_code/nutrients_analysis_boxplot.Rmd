@@ -22,13 +22,15 @@ library(nlme)
 library(multcomp)
 library(plyr)
 library(tidyverse)
-library(here)
 ```
 
 Reading in seawater nutrient data from flow injection analysis:
 
 ```{r pressure, echo=FALSE}
-nu_dat <- read.csv(here("data/FIA-1-R-allreps-T24.csv"), header = TRUE) %>% 
+here::i_am("R_code/nutrients_analysis_boxplot.Rmd")
+library(here)
+here::here()
+nu_dat <- read_csv(here::here("data/FIA-1-R-allreps-T24.csv")) %>% 
    mutate_if(is.character, as.factor)
 nu_dat$Transect <- as.factor(nu_dat$Transect)  
 nu_dat$Depth <- relevel(nu_dat$Depth, ref = "5m")
