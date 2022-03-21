@@ -97,12 +97,16 @@ bencomp_long$Major.Category <- relevel(bencomp_long$Major.Category, ref = "HardC
 bencomp$Depth <- relevel(bencomp$Depth, ref = "5m")
 head(bencomp_long)
 
+levels(bencomp_long$Depth)
+levels(bencomp_long$Depth) <- c("5 m", "10 m")
+
 library(ggplot2)
 library(colorspace)
 ggplot(bencomp_long, 
        aes(x=Year,y = ave, fill= factor(Major.Category,
                                         levels = c("Turf","Substrate.Sand", "SoftCoral","Macroalgae", "Invert", "CCA", "HardCoral")))) + 
-   geom_bar( position="stack", stat="identity") +   facet_grid(Depth~Site2,switch = "x") +
+   geom_bar( position="stack", stat="identity") +   
+   facet_grid(Depth~Site2, switch = "x") +
    labs(x = "Site and Year", y = "Percent") +
    theme_classic() +
    #theme(plot.title = element_text("sans", "bold",color = "black", 25)) +
