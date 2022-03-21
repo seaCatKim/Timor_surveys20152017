@@ -106,6 +106,9 @@ gen.shan.se <- summarySE(gen.shan, "shan", c("Site", "Depth", "Year"))
 ```
 
 ```{r shannon plot}
+levels(gen.shan.se$Depth)
+levels(gen.shan.se$Depth) <- c("5 m", "10 m")
+
 ggplot(gen.shan.se, aes(Year, shan)) + geom_bar(stat = "identity") + 
    facet_grid(Depth~Site, switch = "x") +
    geom_errorbar(aes(ymin = shan-se, ymax = shan+se), 
