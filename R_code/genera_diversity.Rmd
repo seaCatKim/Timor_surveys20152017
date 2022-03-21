@@ -27,7 +27,14 @@ gen$Depth <- relevel(gen$Depth, ref = "5m")  # relevel so depth goes 5 then 10 m
 ```{r average number of corals per site and depth}
 totcoral <- gen %>% 
    dplyr::select(ACA:PORmass) %>% 
-   rowSums()
+   rowSums
+totcoral
+
+cbind(gen[,1:5], totcoral) %>% 
+   group_by(Site, Depth, Year) %>% 
+   dplyr::summarise(total = sum(totcoral)) %>% 
+   group_by(Site, Depth) %>% 
+   dplyr::summarise(aveyr = mean(total), SE = sd(total)/sqrt(n()))
 
 avecoral <- cbind(gen[,1:5], totcoral) %>% 
    group_by(Site, Depth, Year) %>% 
