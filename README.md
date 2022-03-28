@@ -1,10 +1,10 @@
-# Timor_Leste_coral_surveys_20152017
+# Coral surveys at four sites in Timor-Leste before and after 2016-2017 bleaching
 
-This repository mirrors the UQ eSpace record for Kim et al., 2022 The condition of four coral reefs in Timor-Leste before and after the 2016-2017 marine heatwave in the journal Oceans. This repository contains the R related data and code for analysis and figures of the publication.
+This repository mirrors the UQ eSpace record for Kim et al., 2022 The condition of four coral reefs in Timor-Leste before and after the 2016-2017 marine heatwave in the journal Oceans (doi:10.1101/2020.11.03.364323). This repository contains the R related data and code for analysis and figures of the publication.
 
 # 1. data
 
-The data folder is the same as found in the 
+The data folder is the same as found in The University of Queensland eSpace repository at record number [UQ:7278446](https://espace.library.uq.edu.au/view/UQ:7278446) and doi:10.48610/7278446.
 
 # 2. R code
 
@@ -36,7 +36,7 @@ log_CRW_data_arima.Rmd - Testing models for coARMA autocorrelation structure for
 
 # 3. functions
 
-Contains function for arima model in log_CRW_data_arima.Rmd.
+Contains the get_best_arima.R file, a function for arima model in log_CRW_data_arima.Rmd.
 
 # 4. figures
 
